@@ -60,7 +60,8 @@ import AddProductVariant from "./admin/components/layout/AddProductVariant";
 // --------------------------
 // Protected Route Component
 // --------------------------
-const ProtectedAdminRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
+const ProtectedAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+
   const token = localStorage.getItem("adminToken");
   if (!token) {
     return <Navigate to="/admin-login" replace />;
