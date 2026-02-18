@@ -31,7 +31,7 @@ const mockOrder = {
 };
 
 const OrderView: React.FC = () => {
-  const { id } = useParams();
+  const { id: _id } = useParams();
   const navigate = useNavigate();
 
   return (
