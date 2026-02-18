@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+.golden-text {
+  color: #ca0808d4; /* text golden */
+}
+.golden-hover {
+  color: #a88f04d4; /* text golden */
+}
