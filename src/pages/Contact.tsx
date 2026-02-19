@@ -18,7 +18,7 @@ const Contact: React.FC = () => {
   };
 
   return (
-    <section className="w-full px-6 py-16 bg-[#f5f5f5]">
+    <section className="w-full px-6 py-10 bg-[#f5f5f5]">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
         * { font-family: 'Poppins', sans-serif; }
@@ -80,7 +80,7 @@ const Contact: React.FC = () => {
             />
             <button
               type="submit"
-              className="bg-red-600 text-black py-3 rounded-xl font-semibold  hover:bg-red-700 hover:text-white transition-colors"
+              className="bg-red-600 text-white py-3 rounded-xl font-semibold  hover:bg-red-700 hover:text-white transition-colors"
             >
               Send Message
             </button>

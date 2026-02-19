@@ -99,7 +99,7 @@ const Login: React.FC = () => {
 
               <button
                 type="submit"
-                className="mt-2 w-full bg-red-600 text-black font-bold py-3 rounded-xl hover:bg-red-700 hover:text-white transition-colors shadow-lg"
+                className="mt-2 w-full bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 hover:text-white transition-colors shadow-lg"
               >
                 Login
               </button>

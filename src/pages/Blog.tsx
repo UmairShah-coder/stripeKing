@@ -36,7 +36,8 @@ const Blog: React.FC = () => {
         Sneaker <span className="golden-text">Blog</span>
       </h2>
 
-     
+      
+      
       </div>
 
       {/* Dynamic Grid */}

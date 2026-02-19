@@ -147,7 +147,7 @@ const Navbar: React.FC = () => {
 
           {/* Wishlist */}
           <div className="relative cursor-pointer">
-            <Link to="/wishlist" className="flex items-center">
+            <Link to="/wishlist" className="flex  items-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24px"
@@ -155,12 +155,12 @@ const Navbar: React.FC = () => {
                 fill="none"
                 stroke="white"
                 strokeWidth="5"
-                className="hover:stroke-[#ca0808d4]  transition-colors"
-                viewBox="0 0 64 64"
+                className="hover:stroke-[#ca0808d4]   transition-colors"
+                viewBox="-2 0 64 64"
               >
                 <path d="M45.5 4A18.53 18.53 0 0 0 32 9.86 18.5 18.5 0 0 0 0 22.5C0 40.92 29.71 59 31 59.71a2 2 0 0 0 2.06 0C34.29 59 64 40.92 64 22.5A18.52 18.52 0 0 0 45.5 4Z" />
               </svg>
-              <span className="absolute -top-1 -right-2 bg-red-500 text-xs px-1 rounded-full">
+              <span className="absolute -top-1 -right-3 bg-red-500 text-xs px-1 rounded-full">
                 0
               </span>
             </Link>

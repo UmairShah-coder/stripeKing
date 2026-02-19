@@ -101,7 +101,7 @@ const ProductDetail: React.FC = () => {
           <div className="flex flex-col gap-4 mt-4">
             <button
               onClick={() => navigate("/cart")}
-              className="flex-1 flex items-center w-1/3 justify-center gap-2 bg-red-600 text-black hover:text-white font-medium rounded-full py-3 hover:bg-red-700 transition"
+              className="flex-1 flex items-center w-1/3 justify-center gap-2 bg-red-600 text-white hover:text-white font-medium rounded-full py-3 hover:bg-red-700 transition"
             >
               Add to Cart
             </button>
@@ -159,7 +159,7 @@ const ProductDetail: React.FC = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            className="bg-red-600 text-black hover:text-white font-medium py-3 rounded-full hover:bg-red-700 transition"
+            className="bg-red-600 text-white hover:text-white font-medium py-3 rounded-full hover:bg-red-700 transition"
           >
             Submit Review
           </button>

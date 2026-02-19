@@ -46,7 +46,7 @@ const CategorySection: React.FC = () => {
           </div>
         ))}
       </div>
-    </section>
+    </section> 
   );
 };
 

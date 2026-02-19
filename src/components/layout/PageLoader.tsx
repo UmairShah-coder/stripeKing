@@ -23,7 +23,7 @@ const PageLoader: React.FC<PageLoaderProps> = ({ isLoading }) => {
             left: `${Math.random() * 100}%`,
             animationDelay: `${Math.random() * 2}s`,
           }}
-        ></div>
+        ></div> 
       ))}
 
       {/* Loader ring with "Loading..." inside */}

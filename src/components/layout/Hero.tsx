@@ -26,7 +26,7 @@ const navigate = useNavigate();
 <div className="flex gap-4 mt-4">
   <button
     onClick={() => navigate("/products")}
-    className="bg-red-600 text-black hover:text-white font-semibold px-6 py-3 rounded-full hover:bg-red-700 transition-colors shadow-lg"
+    className="bg-red-600 text-white hover:text-white font-semibold px-6 py-3 rounded-full hover:bg-red-700 transition-colors shadow-lg"
   >
     Shop Now
   </button>

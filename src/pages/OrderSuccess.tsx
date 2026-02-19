@@ -13,7 +13,7 @@ const OrderSuccess: React.FC = () => {
 
       {/* Background Image */}
       <img
-        src="/admin.png" // 👈 replace with your background image
+        src="/add.png" // 👈 replace with your background image
         alt="Order Success Background"
         className="absolute inset-0 w-full h-full object-cover"
       />
@@ -22,7 +22,7 @@ const OrderSuccess: React.FC = () => {
       <div className="absolute inset-0 bg-black/40"></div>
 
       {/* Card */}
-      <div className="relative z-10 bg-white/10 backdrop-blur-md p-10 rounded-3xl shadow-xl text-center flex flex-col items-center gap-6 max-w-md">
+      <div className="relative z-10 border bg-white/10  p-10 rounded-3xl shadow-xl text-center flex flex-col items-center gap-6 max-w-md">
         <FaCheckCircle className="text-green-400 text-6xl animate-bounce" />
         <h1 className="text-3xl font-bold text-white">Order Placed Successfully!</h1>
         <p className="text-white/80">
@@ -33,7 +33,7 @@ const OrderSuccess: React.FC = () => {
 
         <Link
           to="/"
-          className="mt-4 bg-red-600 text-black font-semibold py-3 px-8 rounded-xl hover:bg-red-700 hover:text-white transition-colors"
+          className="mt-4 bg-red-600 text-white font-semibold py-3 px-8 rounded-xl hover:bg-red-700 hover:text-white transition-colors"
         >
           Back to Home
         </Link>

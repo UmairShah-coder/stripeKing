@@ -83,21 +83,21 @@ const Footer: React.FC = () => {
           <div className="flex gap-4 mb-4">
             <a
               href="#"
-              className="w-9 h-9 flex items-center justify-center rounded-full bg-[#1a1a1a] hover:bg-[#ca0808d4] hover:text-black transition"
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-[#1a1a1a] hover:bg-[#ca0808d4] hover:text-white transition"
             >
               <FaFacebookF size={14} />
             </a>
 
             <a
               href="#"
-              className="w-9 h-9 flex items-center justify-center rounded-full bg-[#1a1a1a] hover:bg-[#ca0808d4] hover:text-black transition"
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-[#1a1a1a] hover:bg-[#ca0808d4] hover:text-white transition"
             >
               <FaInstagram size={14} />
             </a>
 
             <a
               href="#"
-              className="w-9 h-9 flex items-center justify-center rounded-full bg-[#1a1a1a] hover:bg-[#ca0808d4] hover:text-black transition"
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-[#1a1a1a] hover:bg-[#ca0808d4] hover:text-white transition"
             >
               <FaTwitter size={14} />
             </a>

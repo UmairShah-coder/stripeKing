@@ -69,7 +69,7 @@ const Wishlist: React.FC = () => {
                   {/* Add to Cart */}
                      <button
   onClick={() => navigate("/cart")}
-  className="flex-1 flex items-center justify-center gap-2 bg-red-600 text-black hover:text-white font-medium rounded-full py-2 hover:bg-red-700 transition-colors"
+  className="flex-1 flex items-center justify-center gap-2 bg-red-600 text-white hover:text-white font-medium rounded-full py-2 hover:bg-red-700 transition-colors"
 >
   <svg
     xmlns="http://www.w3.org/2000/svg"

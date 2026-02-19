@@ -109,7 +109,7 @@ const Cart: React.FC = () => {
             {cart.map((item) => (
               <div
                 key={item.id}
-                className="bg-gray-100 border border-red-500 rounded-xl overflow-hidden hover:border-[#bca000] hover:shadow-[0_0_40px_#ca0808d4] transition-all duration-300 flex flex-col lg:flex-row items-center gap-4 p-4"
+                className="bg-gray-100 border border-red-500 rounded-xl overflow-hidden hover:border-[#bca000] hover:shadow-[0_0_10px_#ca0808d4] transition-all duration-300 flex flex-col lg:flex-row items-center gap-4 p-4"
               >
                 {/* Product Image */}
                 <img
@@ -216,7 +216,7 @@ const Cart: React.FC = () => {
                   <div className="flex items-center gap-3 mt-3">
                     <button
                       onClick={() => decrementQuantity(item.id)}
-                      className="px-3 py-1 bg-red-600 hover:text-white hover:bg-red-700 text-black font-bold rounded transition"
+                      className="px-3 py-1 bg-red-600 hover:text-white hover:bg-red-700 text-white font-bold rounded transition"
                     >
                       -
                     </button>
@@ -225,7 +225,7 @@ const Cart: React.FC = () => {
                     </span>
                     <button
                       onClick={() => incrementQuantity(item.id)}
-                      className="px-3 py-1 bg-red-600 hover:text-white hover:bg-red-700 text-black font-bold rounded transition"
+                      className="px-3 py-1 bg-red-600 hover:text-white hover:bg-red-700 text-white font-bold rounded transition"
                     >
                       +
                     </button>
@@ -259,7 +259,7 @@ const Cart: React.FC = () => {
                 <span>Rs. {total.toLocaleString()}</span>
               </div>
               <Link to="/checkout">
-                <button className="mt-4 w-full bg-red-600 text-black font-semibold py-3 rounded-xl hover:bg-red-700 hover:text-white transition-colors">
+                <button className="mt-4 w-full bg-red-600 text-white font-semibold py-3 rounded-xl hover:bg-red-700 hover:text-white transition-colors">
                   Proceed to Checkout
                 </button>
               </Link>

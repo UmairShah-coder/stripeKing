@@ -75,7 +75,7 @@ const FeaturedProducts: React.FC = () => {
                 {/* Buy Now */}
                 <button
                   onClick={() => navigate("/cart")}
-                  className="flex items-center justify-center gap-2 bg-red-600 text-black hover:text-white font-medium rounded-full py-2 hover:bg-red-700 transition-colors"
+                  className="flex items-center justify-center gap-2 bg-red-600 text-white hover:text-white font-medium rounded-full py-2 hover:bg-red-700 transition-colors"
                 >
                   <FaBolt size={14} />
                   Buy Now

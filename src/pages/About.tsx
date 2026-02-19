@@ -2,7 +2,7 @@ import React from "react";
 
 const About: React.FC = () => {
   return (
-    <section className="bg-white  min-h-screen px-6 py-16">
+    <section className="bg-white  min-h-screen px-6 py-5">
       <div className="max-w-7xl mx-auto flex flex-col gap-16">
 
         {/* Hero Section */}
@@ -24,7 +24,7 @@ const About: React.FC = () => {
             <img
               src="/about.png" // Replace with your image
               alt="About StripeKing"
-              className="w-full rounded-xl  hover:scale-105 transition-transform duration-500"
+              className="w-full rounded-xl mt-5 hover:scale-105 transition-transform duration-500"
             />
           </div>
         </div>

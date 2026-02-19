@@ -26,7 +26,7 @@ const customers = [
     comment: "Amazing designs! Truly modern and footwear.",
   },
 ];
-
+ 
 const LovedByCustomers: React.FC = () => {
   // Duplicate customers for seamless scroll
   const allCustomers = [...customers, ...customers];

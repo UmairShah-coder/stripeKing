@@ -124,6 +124,7 @@ const Checkout: React.FC = () => {
                 border-color: #ca0808d4;
                 background: #ca0808d4;
                 font-weight: 600;
+                color:white;
               }
             `}</style>
           </div>
@@ -156,7 +157,7 @@ const Checkout: React.FC = () => {
 
               <Link
                 to="/ordersuccess"
-                className="mt-8 w-full bg-red-600 text-black font-bold py-3 rounded-xl hover:bg-red-700 hover:text-white transition-colors shadow-lg text-center"
+                className="mt-8 w-full bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 hover:text-white transition-colors shadow-lg text-center"
               >
                 Place Order
               </Link>

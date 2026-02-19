@@ -25,10 +25,10 @@ const CategoryPage: React.FC = () => {
   );
 
   return (
-    <section className="max-w-7xl mx-auto px-6 mt-10 mb-24">
+    <section className="max-w-7xl mx-auto px-6 mt-5 mb-24">
       {/* Heading */}
       <h2 className="text-2xl font-bold mb-8 border-b-2 border-[#ca0808d4] w-fit pb-2">
-        Product <span className="text-#ca0808d4">Category</span>
+        Product <span className="text-[#ca0808d4]">Category</span>
       </h2>
 
       {/* Products Grid */}
@@ -77,7 +77,7 @@ const CategoryPage: React.FC = () => {
                 <button
                   onClick={() => navigate("/checkout")}
                   className="flex items-center justify-center gap-2
-                             bg-red-600 text-black hover:text-white
+                             bg-red-600 text-white hover:text-white
                              font-medium rounded-full py-2
                              hover:bg-red-700 transition-colors"
                 >
@@ -90,7 +90,7 @@ const CategoryPage: React.FC = () => {
                   onClick={() => navigate("/cart")}
                   className="flex items-center justify-center gap-2
                              border hover:text-white border-red-500 text-red-500
-                             hover:bg-red-600 hover:text-black
+                             hover:bg-red-600 hover:text-white
                              font-medium rounded-full py-2
                              transition-colors"
                 >

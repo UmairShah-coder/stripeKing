@@ -25,7 +25,7 @@ const Newsletter: React.FC = () => {
             className="w-full sm:w-96 px-5 py-3 rounded-full bg-[#1a1a1a] text-white placeholder-gray-500 outline-none border border-transparent focus:border-[#ca0808d4] transition"
           />
 
-          <button className="px-8 py-3 rounded-full bg-red-600 text-black font-semibold hover:bg-red-700 hover:text-white transition duration-300 shadow-[0_0_15px_#ca0808d4]">
+          <button className="px-8 py-3 rounded-full bg-red-600 text-white font-semibold hover:bg-red-700 hover:text-white transition duration-300 shadow-[0_0_15px_#ca0808d4]">
             Subscribe
           </button>
         </div>

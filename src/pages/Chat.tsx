@@ -53,11 +53,11 @@ const Chat: React.FC = () => {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyPress}
           placeholder="Type your message..."
-          className="flex-1 border border-gray-300 rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+          className="flex-1 border border-gray-300 rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-red-500"
         />
       <button
   onClick={sendMessage}
-  className="bg-yellow-500 text-black hover:text-white p-3 rounded-full hover:bg-yellow-600 transition flex items-center justify-center"
+  className="bg-red-600 text-white hover:text-white p-3 rounded-full hover:bg-red-700 transition flex items-center justify-center"
 >
   <FaPaperPlane />
 </button>

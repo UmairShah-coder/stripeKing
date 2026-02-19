@@ -21,7 +21,7 @@ const HomeLoader: React.FC<HomeLoaderProps> = ({ children }) => {
   }, [location.pathname]);
 
   if (loading) {
-    return (
+    return ( 
       <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50 overflow-hidden">
           <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
