@@ -4,14 +4,23 @@ import { useNavigate } from "react-router-dom";
 import { FiArrowLeft, FiUpload, FiX } from "react-icons/fi";
 import axios from "axios";
 
-const AddBrand: React.FC = () => {
+interface Brand {
+  _id: string;
+  name: string;
+  image: string;
+}
+
+interface AddBrandProps {
+  onBrandAdded: (brand: Brand) => void; // Parent component ko notify karne ke liye
+}
+
+const AddBrand: React.FC<AddBrandProps> = ({ onBrandAdded }) => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Image change handler
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setImageFile(e.target.files[0]);
@@ -19,25 +28,21 @@ const AddBrand: React.FC = () => {
     }
   };
 
-  // Remove selected image
   const removeImage = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     e.stopPropagation();
     setImageFile(null);
     setPreview(null);
   };
 
-  // Form submit with Cloudinary upload
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !imageFile) {
-      alert("Brand name and image are required!");
+      alert("Brand name aur image required hain!");
       return;
     }
 
     try {
       setLoading(true);
-
-      // FormData for file upload
       const formData = new FormData();
       formData.append("name", name);
       formData.append("image", imageFile);
@@ -45,18 +50,24 @@ const AddBrand: React.FC = () => {
       const { data } = await axios.post(
         "http://localhost:5000/api/brands",
         formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      alert(`Brand "${data.name}" added successfully!`);
+      alert(`Brand "${data.name}" add ho gaya!`);
+
+      // Parent component ko notify kar ke table update
+      onBrandAdded(data);
+
+      // Reset form
+      setName("");
+      setImageFile(null);
+      setPreview(null);
+
+      // Optional: back to Brands page
       navigate("/admin-dashboard/brands");
     } catch (error: any) {
-      console.error(error);
-      alert(error.response?.data?.message || "Failed to add brand!");
+      console.error("Add Brand Error:", error);
+      alert(error.response?.data?.message || "Brand add karne me error aaya!");
     } finally {
       setLoading(false);
     }
@@ -64,8 +75,7 @@ const AddBrand: React.FC = () => {
 
   return (
     <div className="min-h-screen p-6 bg-gray-50">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between mt-[-25px] items-center mb-8">
         <h2 className="text-3xl font-bold text-red-600">Add New Brand</h2>
         <button
           onClick={() => navigate("/admin-dashboard/brands")}
@@ -75,10 +85,8 @@ const AddBrand: React.FC = () => {
         </button>
       </div>
 
-      {/* Form Container */}
       <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl p-8">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Brand Name */}
           <div>
             <label className="block text-gray-700 font-medium mb-2">Brand Name</label>
             <input
@@ -92,7 +100,6 @@ const AddBrand: React.FC = () => {
             />
           </div>
 
-          {/* Brand Image Upload */}
           <div>
             <label className="block text-gray-700 font-medium mb-2">Brand Image</label>
             <div
@@ -111,7 +118,7 @@ const AddBrand: React.FC = () => {
                   <img
                     src={preview}
                     alt="preview"
-                    className="w-full h-22 object-cover rounded-xl"
+                    className="w-full h-40 object-cover rounded-xl"
                   />
                   <button
                     type="button"
@@ -134,11 +141,10 @@ const AddBrand: React.FC = () => {
             />
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
-            className={`bg-red-600 text-black hover:text-white px-8 py-3 rounded-xl font-semibold hover:bg-red-700 transition shadow-md ${
+            className={`bg-red-600 text-white hover:text-white px-8 py-3 rounded-xl font-semibold hover:bg-red-700 transition shadow-md ${
               loading ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >

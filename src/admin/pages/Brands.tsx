@@ -1,20 +1,22 @@
+// src/admin/pages/Brands.tsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaEdit, FaTrash, FaSearch } from "react-icons/fa";
 import axios from "axios";
+import AddBrand from "../components/layout/AddBrand";
 
 interface Brand {
   _id: string;
   name: string;
-  image: string; // Cloudinary URL
+  image: string;
 }
 
 const Brands: React.FC = () => {
   const navigate = useNavigate();
   const [brands, setBrands] = useState<Brand[]>([]);
   const [search, setSearch] = useState("");
+  const [showAddBrand, setShowAddBrand] = useState(false);
 
-  // Fetch brands from API
   const fetchBrands = async () => {
     try {
       const { data } = await axios.get("http://localhost:5000/api/brands");
@@ -28,14 +30,21 @@ const Brands: React.FC = () => {
     fetchBrands();
   }, []);
 
+  // Delete brand
   const handleDelete = async (id: string) => {
     if (!window.confirm("Are you sure you want to delete this brand?")) return;
     try {
       await axios.delete(`http://localhost:5000/api/brands/${id}`);
-      fetchBrands(); // refresh after delete
+      setBrands((prev) => prev.filter((b) => b._id !== id));
     } catch (error) {
       console.error("Error deleting brand:", error);
     }
+  };
+
+  // Add new brand in table immediately
+  const handleBrandAdded = (brand: Brand) => {
+    setBrands((prev) => [brand, ...prev]);
+    setShowAddBrand(false);
   };
 
   const filteredBrands = brands.filter((b) =>
@@ -43,27 +52,22 @@ const Brands: React.FC = () => {
   );
 
   return (
-    <div className="p-6 min-h-screen ">
-      <style>{`* { font-family: 'Poppins', sans-serif; }`}</style>
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div className="p-6 min-h-screen">
+      <div className="flex flex-col mt-[-25px] sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-3xl font-extrabold text-gray-800 golden-text">
-            Brands
-          </h2>
-          <p className="text-gray-500 mt-2">Manage all brands.</p>
+          <h2 className="text-3xl font-extrabold text-gray-800 golden-text">Brands</h2>
+          <p className="text-gray-500">Manage all brands.</p>
         </div>
 
         <button
-          onClick={() => navigate("/admin-dashboard/brands/add")}
-          className="flex items-center gap-2 bg-red-600 text-black font-semibold rounded-xl px-5 py-3 shadow-lg hover:bg-red-700 hover:text-white transition"
+          onClick={() => setShowAddBrand(true)}
+          className="flex items-center gap-2 bg-red-600 text-white font-semibold rounded-xl px-5 py-3 shadow-lg hover:bg-red-700 transition"
         >
           <span className="text-lg font-bold">+</span> Add Brand
         </button>
       </div>
 
-      {/* Search Bar */}
+      {/* Search */}
       <div className="mb-6">
         <div className="relative w-full sm:w-96">
           <FaSearch className="absolute top-3 left-3 text-gray-400" />
@@ -77,8 +81,11 @@ const Brands: React.FC = () => {
         </div>
       </div>
 
+      {/* Add Brand Modal / Inline Form */}
+      {showAddBrand && <AddBrand onBrandAdded={handleBrandAdded} />}
+
       {/* Brands Table */}
-      <div className="overflow-x-auto bg-white  shadow">
+      <div className="overflow-x-auto bg-white shadow">
         <table className="min-w-full border border-gray-300 border-collapse">
           <thead className="bg-gray-100 uppercase golden-text text-center">
             <tr>
@@ -87,7 +94,6 @@ const Brands: React.FC = () => {
               <th className="px-4 py-3 text-sm border border-gray-300">Actions</th>
             </tr>
           </thead>
-
           <tbody>
             {filteredBrands.length > 0 ? (
               filteredBrands.map((brand, idx) => (
@@ -95,16 +101,14 @@ const Brands: React.FC = () => {
                   key={brand._id}
                   className={`${idx % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-gray-100 transition`}
                 >
-                  <td className="px-4 py-5 border-b  border-gray-200 flex justify-center">
+                  <td className="px-4 py-5 border-b border-gray-200 flex justify-center">
                     <img
                       src={brand.image}
                       alt={brand.name}
-                      className="w-20 h-full  rounded-md object-cover"
+                      className="w-20 h-20 rounded-md object-cover"
                     />
                   </td>
-                  <td className="px-4 py-3 border border-gray-300 text-center font-medium">
-                    {brand.name}
-                  </td>
+                  <td className="px-4 py-3 border border-gray-300 text-center font-medium">{brand.name}</td>
                   <td className="px-4 py-5 border-b border-gray-300 flex justify-center gap-3">
                     <button
                       onClick={() => navigate(`/admin-dashboard/brands/edit/${brand._id}`)}

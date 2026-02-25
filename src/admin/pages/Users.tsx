@@ -68,17 +68,16 @@ const Users: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 p-6">
+    <div className="min-h-screen bg-gradient-to-br mt-[-25px] from-gray-100 to-gray-200 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold golden-text">Users</h1>
-            <p className="text-gray-500 mt-2">Manage all users.</p>
+            <p className="text-gray-500 ">Manage all users.</p>
           </div>
-          <div className="bg-red-600 px-6 py-3 rounded-xl shadow-md">
-            <span className="text-white font-medium">Total Users: {users.length}</span>
-          </div>
+          {/* Total Users Badge */}
+  
         </div>
 
         {/* Search */}

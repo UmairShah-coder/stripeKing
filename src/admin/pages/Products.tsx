@@ -37,19 +37,19 @@ const Products: React.FC = () => {
       <style>{`* { font-family: 'Poppins', sans-serif; }`}</style>
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="flex flex-col mt-[-25px] sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h2 className="text-3xl font-extrabold text-gray-800">
             <span className="golden-text">
               Products
             </span>
           </h2>
-          <p className="text-gray-500 mt-2">Manage all products.</p>
+          <p className="text-gray-500 ">Manage all products.</p>
         </div>
 
         <button
           onClick={() => navigate("/admin-dashboard/products/add")}
-          className="flex items-center gap-2 bg-red-600 text-black font-semibold rounded-xl px-5 py-3 shadow-lg hover:bg-red-700 hover:text-white transform transition"
+          className="flex items-center gap-2 bg-red-600 text-white font-medium rounded-xl px-5 py-3 shadow-lg hover:bg-red-700 hover:text-white transform transition"
         >
           <span className="text-lg font-bold">+</span> Add Product
         </button>

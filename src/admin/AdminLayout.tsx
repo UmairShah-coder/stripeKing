@@ -25,7 +25,7 @@ const AdminSidebar: React.FC = () => {
     { name: "Users", path: "/admin-dashboard/users", icon: <FaUserFriends /> },
     { name: "All Products", path: "/admin-dashboard/products", icon: <FaBoxes /> },
     {
-      name: "Catalog",
+      name: "Product",
       icon: <FaLayerGroup />,
       subItems: [
         { name: "Categories", path: "/admin-dashboard/category", icon: <FaThLarge /> },

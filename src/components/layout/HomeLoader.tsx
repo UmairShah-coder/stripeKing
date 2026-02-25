@@ -64,7 +64,7 @@ const HomeLoader: React.FC<HomeLoaderProps> = ({ children }) => {
 
         {/* Modern highlighted paragraph */}
         <p className="text-gray-300 text-center max-w-md leading-relaxed text-lg animate-[fadeSlide_2s_ease-in-out] mt-3">
-          Step Into A World Of <span className="golden-text font-semibold">Premium Sneakers</span>, Crafted For <span className="golden-text font-semibold">Style, Comfort </span>And Performance . 
+          Step Into A World Of <span className="golden-text font-semibold">Premium Sneakers</span>, Crafted For <span className="golden-text font-semibold">Style, Comfort </span>And Performance. 
         </p>
 
         {/* Tailwind keyframes */}
