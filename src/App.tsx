@@ -31,7 +31,7 @@ import Category from "./admin/pages/Category";
 import AddProduct from "./admin/components/layout/AddProduct";
 import EditProduct from "./admin/components/layout/EditProduct";
 
-import CartLayout from "./components/layout/CartLayout";
+import ProductDetail from "./components/layout/ProductDetail";
 import Chat from "./pages/Chat";
 import CategoryPage from "./pages/CategoryPage";
 
@@ -43,8 +43,14 @@ import AddCategory from "./admin/components/layout/AddCategory";
 import Brands from "./admin/pages/Brands";
 import AddBrand from "./admin/components/layout/AddBrand";
 import TagPage from "./admin/pages/Tag";
+import Sizes from "./admin/pages/Sizes";
+import Colors from "./admin/pages/Colors";
 import AddTag from "./admin/components/layout/AddTag";
+import AddSize from "./admin/components/layout/AddSize";
+import AddColor from "./admin/components/layout/AddColor";
 import EditTag from "./admin/components/layout/EditTag";
+import EditColor from "./admin/components/layout/EditColor";
+import EditSize from "./admin/components/layout/EditSize";
 import EditBrand from "./admin/components/layout/EditBrand";
 import OrdersPage from "./admin/pages/Orders";
 import OrderView from "./admin/pages/OrderView";
@@ -86,7 +92,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!hideLayout && location.pathname !== "/") {
       setLoading(true);
-      const timer = setTimeout(() => setLoading(false), 1200);
+      const timer = setTimeout(() => setLoading(false), 2000);
       return () => clearTimeout(timer);
     } else {
       setLoading(false);
@@ -110,8 +116,9 @@ const App: React.FC = () => {
                   <CategorySection />
                   <FeaturedProducts />
                   <LovedByCustomers />
-                  <WhyChooseUs />
                   <Newsletter />
+
+                  <WhyChooseUs />
                 </>
               </HomeLoader>
             }
@@ -128,7 +135,7 @@ const App: React.FC = () => {
           <Route path="/register" element={<Register />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/ordersuccess" element={<OrderSuccess />} />
-          <Route path="/cartlayout" element={<CartLayout />} />
+  <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/category/:id" element={<CategoryPage />} />
 
@@ -164,8 +171,14 @@ const App: React.FC = () => {
             <Route path="brands" element={<Brands />} />
             <Route path="brands/add" element={<AddBrand />} />
             <Route path="tags" element={<TagPage />} />
+            <Route path="sizes" element={<Sizes />} />
+            <Route path="colors" element={<Colors />} />
             <Route path="tag/add" element={<AddTag />} />
+            <Route path="size/add" element={<AddSize />} />
+            <Route path="color/add" element={<AddColor />} />
            <Route path="tag/edit/:id" element={<EditTag />} />
+           <Route path="size/edit/:id" element={<EditSize />} />
+           <Route path="color/edit/:id" element={<EditColor />} />
 
             <Route path="brands/edit/:id" element={<EditBrand />} />
             <Route path="orders" element={<OrdersPage />} />

@@ -1,144 +1,185 @@
-// src/admin/pages/Products.tsx
-import React, { useState } from "react";
+// src/admin/components/layout/Products.tsx
+import React, { useState, useEffect } from "react";
 import { FaTrash, FaEdit, FaSearch } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
-interface Product {
-  id: number;
-  name: string;
-  category: string;
-  price: number; // Rs
+interface Variant {
   size: string;
-  color: string; // hex code
+  color: string;  // flattened format
+  stock: number;
 }
 
-const initialProducts: Product[] = [
-  { id: 1, name: "Urban Classic Sneakers", category: "Sneakers", price: 120, size: "42", color: "#FF0000" },
-  { id: 2, name: "Leather Oxford Shoes", category: "Formals", price: 150, size: "41", color: "#000000" },
-  { id: 3, name: "Casual Street Shoes", category: "Casual", price: 110, size: "43", color: "#FFFFFF" },
-  { id: 4, name: "High-Top Sneakers", category: "Sneakers", price: 160, size: "44", color: "#0000FF" },
-];
+interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  category: { _id: string; name: string };
+  mainImage: string;
+  galleryImages: string[];
+  variants: Variant[];
+}
 
 const Products: React.FC = () => {
   const navigate = useNavigate();
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
 
-  const filteredProducts = products.filter((p) =>
+  // Fetch products from backend
+  const fetchProducts = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/products");
+      setProducts(res.data);
+    } catch (err) {
+      console.error("Error fetching products:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  // Delete product
+  const deleteProduct = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this product?")) return;
+    try {
+      await axios.delete(`http://localhost:5000/api/products/${id}`);
+      setProducts(prev => prev.filter(p => p._id !== id));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Filter products by search
+  const filteredProducts = products.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const deleteProduct = (id: number) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
-  };
-
   return (
-    <div className="p-6  min-h-screen">
-      <style>{`* { font-family: 'Poppins', sans-serif; }`}</style>
-
+    <div className="p-6 min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="flex flex-col mt-[-25px] sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-3xl font-extrabold text-gray-800">
-            <span className="golden-text">
-              Products
-            </span>
-          </h2>
-          <p className="text-gray-500 ">Manage all products.</p>
+          <h2 className="text-3xl font-bold text-red-600">Products</h2>
+          <p className="text-gray-500">Manage all products</p>
         </div>
 
         <button
           onClick={() => navigate("/admin-dashboard/products/add")}
-          className="flex items-center gap-2 bg-red-600 text-white font-medium rounded-xl px-5 py-3 shadow-lg hover:bg-red-700 hover:text-white transform transition"
+          className="bg-red-600 text-white px-5 py-2 rounded-xl shadow hover:bg-red-700"
         >
-          <span className="text-lg font-bold">+</span> Add Product
+          + Add Product
         </button>
       </div>
 
-      {/* Search Bar */}
-    <div className="mb-6">
-             <div className="relative w-96">
-               <FaSearch className="absolute top-3 left-3 text-gray-400" />
-               <input
-                 type="text"
-                 placeholder="Search products..."
-                 value={search}
-                 onChange={(e) => setSearch(e.target.value)}
-                 className="w-full bg-white shadow-md rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 transition"
-               />
-             </div>
-           </div>
-   
-      {/* Products Table */}
-  <div className="overflow-x-auto">
-  <table className="min-w-full border border-gray-300 rounded-xl border-collapse shadow-sm">
-    <thead className="bg-gray-100  uppercase text-gray-800 golden-text text-center">
-      <tr>
-        <th className="px-4 py-3 text-sm border border-gray-300">Product</th>
-        <th className="px-4 py-3 text-sm   border border-gray-300">Category</th>
-        <th className="px-4 py-3 text-sm  border border-gray-300">Price</th>
-        <th className="px-4 py-3 text-sm  border border-gray-300">Size</th>
-        <th className="px-4 py-3 text-sm  border border-gray-300">Color</th>
-        <th className="px-4 py-3 text-sm  border border-gray-300">Actions</th>
-      </tr>
-    </thead>
+      {/* Search */}
+      <div className="mb-6 w-96 relative">
+        <FaSearch className="absolute top-3 left-3 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search product..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full border rounded-xl pl-10 pr-4 py-2 focus:ring-2 focus:ring-red-500 outline-none"
+        />
+      </div>
 
-    <tbody>
-      {filteredProducts.length > 0 ? (
-        filteredProducts.map((product, idx) => (
-          <tr
-            key={product.id}
-            className={`${
-              idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-            } hover:bg-gray-100 transition`}
-          >
-            <td className="px-4 py-3 border border-gray-300 text-center font-medium">
-              {product.name}
-            </td>
-            <td className="px-4 py-3 border border-gray-300 text-center">
-              {product.category}
-            </td>
-            <td className="px-4 py-3 border border-gray-300 text-center font-semibold">
-              Rs {product.price}
-            </td>
-            <td className="px-4 py-3 border border-gray-300 text-center">
-              {product.size}
-            </td>
-            <td className="px-4 py-3 border border-gray-300 text-center">
-              <span
-                className="inline-block w-5 h-5 rounded-full border border-gray-300 mx-auto"
-                style={{ backgroundColor: product.color }}
-              ></span>
-            </td>
-            <td className="px-4 py-5 border border-gray-200 flex justify-center gap-3">
-              <button
-                onClick={() => navigate(`/admin-dashboard/edit-product/${product.id}`)}
-                className="text-gray-500 hover:text-gray-700 transition text-lg"
-                title="Edit Product"
-              >
-                <FaEdit />
-              </button>
-              <button
-                onClick={() => deleteProduct(product.id)}
-                className="text-red-500 hover:text-red-700 transition text-lg"
-                title="Delete Product"
-              >
-                <FaTrash />
-              </button>
-            </td>
-          </tr>
-        ))
-      ) : (
-        <tr>
-          <td colSpan={6} className="text-center py-6 text-gray-400 border border-gray-300">
-            No products found.
-          </td>
-        </tr>
-      )}
-    </tbody>
-  </table>
-</div>
+      {/* Table */}
+      <div className="overflow-x-auto bg-white rounded-xl shadow">
+        <table className="min-w-full text-center border-collapse">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="p-3 text-left">Product</th>
+              <th className="p-3">Category</th>
+              <th className="p-3">Price</th>
+              <th className="p-3">Variants</th>
+              <th className="p-3">Actions</th>
+            </tr>
+          </thead>
 
+          <tbody>
+            {filteredProducts.length > 0 ? (
+              filteredProducts.map((product, index) => (
+                <tr
+                  key={product._id}
+                  className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                >
+                  {/* Product column: image + name */}
+                  <td className="p-3 flex items-center gap-3 text-left">
+                    {product.mainImage ? (
+                      <img
+                        src={product.mainImage}
+                        alt={product.name}
+                        className="w-16 h-16 object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 bg-gray-200 flex items-center justify-center rounded-lg text-gray-400">
+                        No Image
+                      </div>
+                    )}
+                    <span className="font-semibold">{product.name}</span>
+                  </td>
+
+                  {/* Category */}
+                  <td className="p-3">{product.category?.name || "N/A"}</td>
+
+                  {/* Price */}
+                  <td className="p-3 font-bold text-red-600">Rs {product.price}</td>
+
+                  {/* Variants */}
+                  <td className="p-3">
+                    {product.variants.length > 0 ? (
+                      <div className="flex flex-col gap-2">
+                        {Object.entries(
+                          product.variants.reduce(
+                            (acc: Record<string, { colors: string[], stock: number }>, v) => {
+                              if (!acc[v.size]) acc[v.size] = { colors: [], stock: v.stock };
+                              acc[v.size].colors.push(v.color);
+                              return acc;
+                            },
+                            {}
+                          )
+                        ).map(([size, { colors, stock }], i) => (
+                          <div key={i} className="flex items-center gap-2 bg-gray-100 px-2 py-1 rounded-lg text-sm">
+                            <span className="font-semibold">Size: {size}</span>
+                            <span>Colors: <strong>{colors.join(", ")}</strong></span>
+                            <span>Stock: {stock}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">No variants</span>
+                    )}
+                  </td>
+
+                  {/* Actions */}
+                  <td className="p-3 flex justify-center gap-4">
+                    <button
+                      onClick={() => navigate(`/admin-dashboard/edit-product/${product._id}`)}
+                      className="text-gray-600 hover:text-black"
+                    >
+                      <FaEdit />
+                    </button>
+
+                    <button
+                      onClick={() => deleteProduct(product._id)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <FaTrash />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={5} className="py-6 text-gray-400">
+                  No products found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

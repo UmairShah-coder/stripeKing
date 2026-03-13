@@ -23,70 +23,128 @@ const customers = [
     id: 4,
     name: "Sara Williams",
     rating: 5,
-    comment: "Amazing designs! Truly modern and footwear.",
+    comment: "Amazing designs! Truly modern and premium footwear.",
   },
 ];
- 
+
 const LovedByCustomers: React.FC = () => {
-  // Duplicate customers for seamless scroll
   const allCustomers = [...customers, ...customers];
 
   return (
-    <section className="max-w-7xl mx-auto mt-22 px-6 py-12 overflow-hidden">
-       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+    <section className="relative overflow-hidden bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#1a0202] pt-20">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
         * { font-family: 'Poppins', sans-serif; }
+
+        .section-title {
+         background: linear-gradient(90deg, #ffffff 0%, #ffb3b3 35%, #ca0808 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .testimonial-card {
+          background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(220,38,38,0.08));
+          border: 1px solid rgba(255,255,255,0.08);
+          box-shadow: 0 18px 40px rgba(0,0,0,0.30);
+        }
+
+        .testimonial-card:hover {
+          border-color: rgba(220,38,38,0.35);
+          box-shadow:
+            0 22px 50px rgba(0,0,0,0.40),
+            0 10px 30px rgba(220,38,38,0.12);
+        }
+
+        @keyframes marqueeScroll {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+
+        .marquee-track {
+          display: flex;
+          width: max-content;
+          animation: marqueeScroll 18s linear infinite;
+        }
+
+        .marquee-track:hover {
+          animation-play-state: paused;
+        }
       `}</style>
-      <h2 className="text-2xl font-bold  mb-8 border-b-2 border-[#ca0808d4] w-fit pb-2">
-        Loved by Our <span className="golden-text">Customers</span> 
-      </h2>
 
-      {/* Scroll Container */}
-      <div className="relative w-full overflow-hidden">
-        {/* Scrolling Row */}
-        <div className="flex animate-scroll gap-6">
-          {allCustomers.map((c, idx) => (
-            <div
-              key={idx}
-              className="flex-shrink-0 w-64  bg-black rounded-2xl p-6 flex flex-col items-center text-center shadow-xl"
-            >
-              {/* Rating */}
-              <div className="flex gap-1 mb-2">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <span
-                    key={i}
-                    className={`text-yellow-400 ${
-                      i < c.rating ? "opacity-100" : "opacity-30"
-                    }`}
-                  >
-                    ⭐
-                  </span>
-                ))}
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
+        {/* Header */}
+        <div className="mb-10">
+          <span className="inline-flex items-center rounded-full border border-red-500/25 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-300">
+            Customer Experience
+          </span>
+
+          <h2 className="mt-4 text-3xl font-extrabold text-white sm:text-4xl">
+            Loved by Our <span className="section-title">Customers</span>
+          </h2>
+
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-white/55 sm:text-base">
+            Discover why our customers trust StripeKing for premium comfort,
+            modern style, and exceptional quality in every pair.
+          </p>
+        </div>
+
+        {/* Marquee */}
+        <div className="relative overflow-hidden">
+          <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-20 bg-gradient-to-r from-black to-transparent" />
+          <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-20 bg-gradient-to-l from-black to-transparent" />
+
+          <div className="marquee-track gap-6">
+            {allCustomers.map((customer, index) => (
+              <div
+                key={`${customer.id}-${index}`}
+                className="testimonial-card w-[290px] sm:w-[320px] flex-shrink-0 rounded-3xl p-6 transition-all duration-300"
+              >
+                {/* Stars */}
+                <div className="mb-4 flex items-center gap-1">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <span
+                      key={i}
+                      className={`text-base ${
+                        i < customer.rating ? "text-yellow-400" : "text-white/20"
+                      }`}
+                    >
+                      ★
+                    </span>
+                  ))}
+                </div>
+
+                {/* Comment */}
+                <p className="min-h-[84px] text-sm leading-7 text-white/65 italic">
+                  “{customer.comment}”
+                </p>
+
+                {/* Divider */}
+                <div className="my-5 h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+                {/* Customer */}
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-red-900 text-sm font-bold text-white shadow-[0_8px_18px_rgba(220,38,38,0.30)]">
+                    {customer.name.charAt(0)}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">
+                      {customer.name}
+                    </h3>
+                    <p className="text-xs uppercase tracking-[0.18em] text-white/35">
+                      Verified Customer
+                    </p>
+                  </div>
+                </div>
               </div>
-
-              {/* Comment */}
-              <p className="text-gray-300 text-sm italic mb-4">"{c.comment}"</p>
-
-              {/* Customer Name */}
-              <h3 className="text-white font-semibold">{c.name}</h3>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
-
-      {/* CSS Animation */}
-      <style>
-        {`
-          @keyframes scroll {
-            0% { transform: translateX(0%); }
-            100% { transform: translateX(-50%); }
-          }
-          .animate-scroll {
-            display: flex;
-            animation: scroll 10s linear infinite;
-          }
-        `}
-      </style>
     </section>
   );
 };

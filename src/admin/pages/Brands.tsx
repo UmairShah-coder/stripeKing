@@ -59,12 +59,12 @@ const Brands: React.FC = () => {
           <p className="text-gray-500">Manage all brands.</p>
         </div>
 
-        <button
-          onClick={() => setShowAddBrand(true)}
-          className="flex items-center gap-2 bg-red-600 text-white font-semibold rounded-xl px-5 py-3 shadow-lg hover:bg-red-700 transition"
-        >
-          <span className="text-lg font-bold">+</span> Add Brand
-        </button>
+     <button
+  onClick={() => navigate("/admin-dashboard/brands/add")}
+  className="flex items-center gap-2 bg-red-600 text-white font-semibold rounded-xl px-5 py-3 shadow-lg hover:bg-red-700 transition"
+>
+  <span className="text-lg font-bold">+</span> Add Brand
+</button>
       </div>
 
       {/* Search */}
@@ -105,11 +105,11 @@ const Brands: React.FC = () => {
                     <img
                       src={brand.image}
                       alt={brand.name}
-                      className="w-20 h-20 rounded-md object-cover"
+                      className="w-20 h-full rounded-md object-cover"
                     />
                   </td>
                   <td className="px-4 py-3 border border-gray-300 text-center font-medium">{brand.name}</td>
-                  <td className="px-4 py-5 border-b border-gray-300 flex justify-center gap-3">
+                  <td className="px-4 py-5  border-b border-gray-300 flex justify-center gap-3">
                     <button
                       onClick={() => navigate(`/admin-dashboard/brands/edit/${brand._id}`)}
                       className="text-gray-500 hover:text-gray-700 pb-5 transition text-lg"

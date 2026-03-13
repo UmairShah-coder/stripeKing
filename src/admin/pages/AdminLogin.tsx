@@ -103,7 +103,7 @@ const AdminLogin: React.FC = () => {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="●●●●●●●"
+                placeholder="●●●●●●●●●"
                 required
                 className="w-full bg-transparent text-white placeholder-white/70 outline-none"
               />

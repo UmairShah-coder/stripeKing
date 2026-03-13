@@ -1,120 +1,242 @@
-// src/pages/CategoryPage.tsx
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaHeart, FaBolt } from "react-icons/fa";
+import { FaHeart, FaShoppingCart } from "react-icons/fa";
+import axios from "axios";
+import Tilt from "react-parallax-tilt";
 
-// TEMP mock products
-const productsData = [
-  {
-    id: 1,
-    name: "Urban Classic Sneakers",
-    price: "$120",
-    image: "/sho.png",
-    categoryId: 1,
-  },
-];
+interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  description: string;
+  mainImage: string;
+  categoryId?: number;
+}
 
 const CategoryPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  const [products, setProducts] = useState<Product[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 4;
+
   const categoryId = Number(id);
 
-  const categoryProducts = productsData.filter(
-    (p) => p.categoryId === categoryId
-  );
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/products");
+        setProducts(res.data);
+      } catch (err) {
+        console.error("Error fetching category products:", err);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => Number(product.categoryId) === categoryId);
+  }, [products, categoryId]);
+
+  const indexOfLast = currentPage * productsPerPage;
+  const indexOfFirst = indexOfLast - productsPerPage;
+  const currentProducts = filteredProducts.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+
+  const addToCart = (product: Product) => {
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const existing = cart.find((item: any) => item.id === product._id);
+
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      cart.push({
+        id: product._id,
+        name: product.name,
+        price: product.price,
+        mainImage: product.mainImage,
+        quantity: 1,
+      });
+    }
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+  };
+
+  const handleBuyNow = (product: Product) => {
+    addToCart(product);
+    navigate(`/product/${product._id}`);
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categoryId]);
 
   return (
-    <section className="max-w-7xl mx-auto px-6 mt-5 mb-24">
-      {/* Heading */}
-      <h2 className="text-2xl font-bold mb-8 border-b-2 border-[#ca0808d4] w-fit pb-2">
-        Product <span className="text-[#ca0808d4]">Category</span>
-      </h2>
+    <section className="bg-black py-16 sm:py-20 min-h-screen">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Poppins', sans-serif; }
 
-      {/* Products Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-        {categoryProducts.map((product) => (
-          <div
-            key={product.id}
-            className="bg-black rounded-xl overflow-hidden border border-transparent
-                       hover:border-[#ca0808d4] hover:shadow-[0_0_40px_#ca0808d4]
-                       transition-all duration-300 flex flex-col"
-          >
-            {/* Image Wrapper */}
-            <div className="relative overflow-hidden flex-1">
-              {/* Wishlist */}
-              <button
-                onClick={() => navigate("/wishlist")}
-                className="absolute top-3 right-3 z-10 w-9 h-9
-                           flex items-center justify-center rounded-full
-                           bg-black/70 text-white
-                           hover:text-[#ca0808d4] transition"
-              >
-                <FaHeart size={16} />
-              </button>
+        .section-title {
+          background: linear-gradient(90deg, #ffffff 0%, #fca5a5 45%, #dc2626 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
 
-              <img
-                src={product.image}
-                alt={product.name}
-                onClick={() => navigate("/cartlayout")}
-                className="w-full h-64 object-contain cursor-pointer
-                           transform hover:scale-105
-                           transition-transform duration-500"
-              />
-            </div>
+        .product-card {
+          background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(220,38,38,0.08));
+          border: 1px solid rgba(255,255,255,0.08);
+          box-shadow: 0 18px 40px rgba(0,0,0,0.30);
+        }
 
-            {/* Info */}
-            <div className="p-4 flex flex-col gap-3">
-              <h3 className="text-white font-semibold text-lg">
-                {product.name}
-              </h3>
+        .product-card:hover {
+          border-color: rgba(220,38,38,0.35);
+          box-shadow:
+            0 22px 50px rgba(0,0,0,0.42),
+            0 10px 30px rgba(220,38,38,0.12);
+        }
 
-              <span className="golden-text font-bold">{product.price}</span>
+        .image-wrap {
+          background: radial-gradient(circle at top, rgba(220,38,38,0.10), rgba(255,255,255,0.02), rgba(0,0,0,0.2));
+        }
+      `}</style>
 
-              {/* Buttons */}
-              <div className="mt-2 flex flex-col gap-2">
-                {/* Buy Now */}
-                <button
-                  onClick={() => navigate("/checkout")}
-                  className="flex items-center justify-center gap-2
-                             bg-red-600 text-white hover:text-white
-                             font-medium rounded-full py-2
-                             hover:bg-red-700 transition-colors"
-                >
-                  <FaBolt size={14} />
-                  Buy Now
-                </button>
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
+        {/* Header */}
+        <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <span className="inline-flex items-center rounded-full border border-red-500/25 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-300">
+              Category Collection
+            </span>
 
-                {/* Add to Cart */}
-                <button
-                  onClick={() => navigate("/cart")}
-                  className="flex items-center justify-center gap-2
-                             border hover:text-white border-red-500 text-red-500
-                             hover:bg-red-600 hover:text-white
-                             font-medium rounded-full py-2
-                             transition-colors"
-                >
-                   <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20px"
-        height="20px"
-        fill="currentColor"
-        className="transition-colors"
-        viewBox="0 0 512 512"
-      >
-        <path d="M164.96 300.004h.024c.02 0 .04-.004.059-.004H437a15.003 15.003 0 0 0 14.422-10.879l60-210a15.003 15.003 0 0 0-2.445-13.152A15.006 15.006 0 0 0 497 60H130.367l-10.722-48.254A15.003 15.003 0 0 0 105 0H15C6.715 0 0 6.715 0 15s6.715 15 15 15h77.969c1.898 8.55 51.312 230.918 54.156 243.71C131.184 280.64 120 296.536 120 315c0 24.812 20.188 45 45 45h272c8.285 0 15-6.715 15-15s-6.715-15-15-15H165c-8.27 0-15-6.73-15-15 0-8.258 6.707-14.977 14.96-14.996zM477.114 90l-51.43 180H177.032l-40-180zM150 405c0 24.813 20.188 45 45 45s45-20.188 45-45-20.188-45-45-45-45 20.188-45 45zm45-15c8.27 0 15 6.73 15 15s-6.73 15-15 15-15-6.73-15-15 6.73-15 15-15z" />
-      </svg>
-                  Add to Cart
-                </button>
-              </div>
-            </div>
+            <h2 className="mt-4 text-3xl font-extrabold text-white sm:text-4xl">
+              Product <span className="section-title">Category</span>
+            </h2>
+
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-white/55 sm:text-base">
+              Explore premium products from this category with modern design,
+              comfort, and signature StripeKing quality.
+            </p>
           </div>
-        ))}
 
-        {categoryProducts.length === 0 && (
-          <p className="text-white text-xl col-span-full text-center">
-            No products found in this category.
-          </p>
+          <button
+            onClick={() => navigate("/products")}
+            className="w-fit rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:border-red-500 hover:bg-red-600"
+          >
+            View All Products
+          </button>
+        </div>
+
+        {/* Products Grid */}
+        {currentProducts.length > 0 ? (
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 xl:grid-cols-4">
+            {currentProducts.map((product) => (
+              <Tilt
+                key={product._id}
+                glareEnable={true}
+                glareMaxOpacity={0.12}
+                scale={1.02}
+                transitionSpeed={1800}
+                tiltMaxAngleX={6}
+                tiltMaxAngleY={6}
+                className="rounded-[28px]"
+              >
+                <div className="product-card group relative flex h-full flex-col overflow-hidden rounded-[28px] transition-all duration-500">
+                  {/* Top actions */}
+                  <div className="absolute right-4 top-4 z-20">
+                    <button
+                      onClick={() => navigate("/wishlist")}
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/50 text-white backdrop-blur-md transition-all duration-300 hover:border-red-500 hover:text-red-500"
+                    >
+                      <FaHeart size={14} />
+                    </button>
+                  </div>
+
+                  {/* Image */}
+                  <div
+                    className="image-wrap relative flex h-72 cursor-pointer items-center justify-center overflow-hidden"
+                    onClick={() => handleBuyNow(product)}
+                  >
+                    <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-red-400 to-transparent" />
+
+                    <img
+                      src={product.mainImage}
+                      alt={product.name}
+                      className="h-56 object-contain transition-transform duration-700 ease-in-out group-hover:scale-110"
+                    />
+
+                    <div className="absolute inset-0 bg-black/0 transition duration-500 group-hover:bg-black/20" />
+                  </div>
+
+                  {/* Product Info */}
+                  <div className="flex flex-1 flex-col p-6">
+                    <h3 className="text-lg font-semibold leading-tight text-white transition-colors duration-300 group-hover:text-red-400">
+                      {product.name}
+                    </h3>
+
+                    <p className="mt-3 line-clamp-2 text-sm leading-7 text-white/55">
+                      {product.description}
+                    </p>
+
+                    <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-5">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.18em] text-white/35">
+                          Price
+                        </p>
+                        <span className="mt-1 block text-xl font-bold text-red-400">
+                          Rs. {product.price}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => addToCart(product)}
+                        className="flex h-11 w-11 items-center justify-center rounded-full bg-red-600 text-white shadow-[0_10px_20px_rgba(220,38,38,0.28)] transition-all duration-300 hover:scale-105 hover:bg-red-700"
+                      >
+                        <FaShoppingCart size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </Tilt>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-[28px] border border-white/10 bg-white/[0.03] px-6 py-16 text-center">
+            <h3 className="text-2xl font-semibold text-white">
+              No products found
+            </h3>
+            <p className="mt-3 text-sm leading-7 text-white/50">
+              There are currently no products available in this category.
+            </p>
+            <button
+              onClick={() => navigate("/products")}
+              className="mt-6 rounded-full bg-red-600 px-6 py-3 text-sm font-semibold text-white transition-all duration-300 hover:bg-red-700"
+            >
+              Browse All Products
+            </button>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-12 flex justify-center gap-3">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`flex h-11 min-w-[44px] items-center justify-center rounded-full border text-sm font-semibold transition-all duration-300 ${
+                  currentPage === page
+                    ? "border-red-600 bg-red-600 text-white shadow-[0_10px_20px_rgba(220,38,38,0.28)]"
+                    : "border-white/10 bg-white/5 text-white hover:border-red-500 hover:bg-red-600"
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+          </div>
         )}
       </div>
     </section>

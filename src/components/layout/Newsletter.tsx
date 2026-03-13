@@ -2,36 +2,62 @@ import React from "react";
 
 const Newsletter: React.FC = () => {
   return (
-    <section className="py-20 px-6 mt-20">
-        <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+    <section className="relative overflow-hidden bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#1a0202] pt-32">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
         * { font-family: 'Poppins', sans-serif; }
+
+        .title-gradient {
+           background: linear-gradient(90deg, #ffffff 0%, #ffb3b3 35%, #ca0808 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .newsletter-card {
+          background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(220,38,38,0.08));
+          border: 1px solid rgba(255,255,255,0.08);
+          box-shadow: 0 18px 45px rgba(0,0,0,0.35);
+        }
+
+        .newsletter-input {
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.10);
+        }
+
+        .newsletter-input:focus {
+          border-color: #dc2626;
+        }
       `}</style>
-      <div className="max-w-4xl mx-auto text-center bg-black rounded-3xl p-12 border border-[#bca000]/20 shadow-[0_0_40px_#bca00022]">
-        
-        <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-          Join the <span className="golden-text">StripeKing</span> Club
+
+      <div className="max-w-4xl mx-auto text-center newsletter-card rounded-[32px] p-10 sm:p-12">
+        {/* Title */}
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">
+          Join the <span className="title-gradient">StripeKing</span> Club
         </h2>
 
-        <p className="text-gray-400 mb-8">
-          Subscribe to get special offers, new arrivals, and exclusive discounts.
+        {/* Description */}
+        <p className="text-white/55 mb-8 max-w-xl mx-auto text-sm sm:text-base leading-7">
+          Subscribe to receive exclusive offers, early access to new
+          collections, and special discounts tailored just for you.
         </p>
 
-        {/* Input + Button */}
-        <div className="flex flex-col sm:flex-row items-center gap-4 justify-center">
+        {/* Form */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <input
             type="email"
             placeholder="Enter your email address"
-            className="w-full sm:w-96 px-5 py-3 rounded-full bg-[#1a1a1a] text-white placeholder-gray-500 outline-none border border-transparent focus:border-[#ca0808d4] transition"
+            className="newsletter-input w-full sm:w-96 px-5 py-3.5 rounded-full text-white placeholder-white/40 outline-none transition-all duration-300"
           />
 
-          <button className="px-8 py-3 rounded-full bg-red-600 text-white font-semibold hover:bg-red-700 hover:text-white transition duration-300 shadow-[0_0_15px_#ca0808d4]">
+          <button className="px-8 py-3.5 rounded-full bg-red-600 text-white font-semibold shadow-[0_10px_25px_rgba(220,38,38,0.35)] hover:bg-red-700 hover:scale-[1.02] transition-all duration-300">
             Subscribe
           </button>
         </div>
 
-        <p className="text-xs text-gray-500 mt-6">
-          We respect your privacy. Unsubscribe at any time.
+        {/* Privacy */}
+        <p className="text-xs text-white/40 mt-6">
+          We respect your privacy. Unsubscribe anytime.
         </p>
       </div>
     </section>

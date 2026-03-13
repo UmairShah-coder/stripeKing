@@ -11,7 +11,7 @@ interface Brand {
 }
 
 interface AddBrandProps {
-  onBrandAdded: (brand: Brand) => void; // Parent component ko notify karne ke liye
+  onBrandAdded?: (brand: Brand) => void; // 👈 optional
 }
 
 const AddBrand: React.FC<AddBrandProps> = ({ onBrandAdded }) => {
@@ -28,7 +28,7 @@ const AddBrand: React.FC<AddBrandProps> = ({ onBrandAdded }) => {
     }
   };
 
-  const removeImage = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+  const removeImage = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     setImageFile(null);
     setPreview(null);
@@ -36,6 +36,7 @@ const AddBrand: React.FC<AddBrandProps> = ({ onBrandAdded }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!name.trim() || !imageFile) {
       alert("Brand name aur image required hain!");
       return;
@@ -43,27 +44,27 @@ const AddBrand: React.FC<AddBrandProps> = ({ onBrandAdded }) => {
 
     try {
       setLoading(true);
+
       const formData = new FormData();
       formData.append("name", name);
       formData.append("image", imageFile);
 
       const { data } = await axios.post(
         "http://localhost:5000/api/brands",
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
+        formData
       );
 
       alert(`Brand "${data.name}" add ho gaya!`);
 
-      // Parent component ko notify kar ke table update
-      onBrandAdded(data);
+      // 👇 Safe call
+      if (onBrandAdded) {
+        onBrandAdded(data);
+      }
 
-      // Reset form
       setName("");
       setImageFile(null);
       setPreview(null);
 
-      // Optional: back to Brands page
       navigate("/admin-dashboard/brands");
     } catch (error: any) {
       console.error("Add Brand Error:", error);
@@ -74,7 +75,7 @@ const AddBrand: React.FC<AddBrandProps> = ({ onBrandAdded }) => {
   };
 
   return (
-    <div className="min-h-screen p-6 bg-gray-50">
+    <div className="min-h-screen p-6 ">
       <div className="flex justify-between mt-[-25px] items-center mb-8">
         <h2 className="text-3xl font-bold text-red-600">Add New Brand</h2>
         <button
@@ -85,10 +86,12 @@ const AddBrand: React.FC<AddBrandProps> = ({ onBrandAdded }) => {
         </button>
       </div>
 
-      <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl p-8">
+      <div className="max-w-4xl mx-auto bg-white  shadow-xl rounded-2xl p-8">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Brand Name</label>
+            <label className="block text-gray-700 font-medium mb-2">
+              Brand Name
+            </label>
             <input
               type="text"
               value={name}
@@ -101,12 +104,19 @@ const AddBrand: React.FC<AddBrandProps> = ({ onBrandAdded }) => {
           </div>
 
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Brand Image</label>
+            <label className="block text-gray-700 font-medium mb-2">
+              Brand Image
+            </label>
+
             <div
               className={`w-60 h-40 border-2 border-dashed rounded-xl flex items-center justify-center cursor-pointer ${
-                preview ? "border-gray-300" : "border-gray-400 hover:border-red-500"
+                preview
+                  ? "border-gray-300"
+                  : "border-gray-400 hover:border-red-500"
               }`}
-              onClick={() => document.getElementById("brandImageInput")?.click()}
+              onClick={() =>
+                document.getElementById("brandImageInput")?.click()
+              }
             >
               {!preview ? (
                 <div className="text-center text-gray-400">
@@ -144,12 +154,19 @@ const AddBrand: React.FC<AddBrandProps> = ({ onBrandAdded }) => {
           <button
             type="submit"
             disabled={loading}
-            className={`bg-red-600 text-white hover:text-white px-8 py-3 rounded-xl font-semibold hover:bg-red-700 transition shadow-md ${
+            className={`bg-red-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-red-700 transition shadow-md ${
               loading ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
             {loading ? "Saving..." : "Add Brand"}
           </button>
+              <button
+              type="button"
+              onClick={() => navigate("/admin-dashboard/brands")}
+              className="border ml-2 px-8 py-3 rounded-xl hover:bg-gray-100 transition"
+            >
+              Cancel
+            </button>
         </form>
       </div>
     </div>

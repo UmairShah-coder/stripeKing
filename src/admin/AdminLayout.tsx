@@ -13,6 +13,8 @@ import {
   FaStarHalfAlt,
   FaIdBadge,
   FaChevronDown,
+  FaRuler,
+  FaPalette,
 } from "react-icons/fa";
 import AdminHeader from "../admin/AdminHeader";
 
@@ -31,6 +33,8 @@ const AdminSidebar: React.FC = () => {
         { name: "Categories", path: "/admin-dashboard/category", icon: <FaThLarge /> },
         { name: "Brands", path: "/admin-dashboard/brands", icon: <FaCopyright /> },
         { name: "Tags", path: "/admin-dashboard/tags", icon: <FaTag /> },
+            { name: "Sizes", path: "/admin-dashboard/sizes", icon: <FaRuler /> },
+      { name: "Colors", path: "/admin-dashboard/colors", icon: <FaPalette /> },
       ],
     },
     { name: "Orders", path: "/admin-dashboard/orders", icon: <FaShoppingCart /> },
