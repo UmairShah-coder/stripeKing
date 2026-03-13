@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import {
   CreditCard,
   MapPin,
@@ -31,9 +33,13 @@ type PaymentMethod = "cod" | "card" | "installment";
 type CheckoutStep = "address" | "payment";
 
 const Checkout: React.FC = () => {
+  const navigate = useNavigate();
+
   const [cart, setCart] = useState<CartItem[]>([]);
   const [currentStep, setCurrentStep] = useState<CheckoutStep>("address");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
+  const [checkoutMode, setCheckoutMode] = useState<"cart" | "buyNow">("cart");
+  const [placingOrder, setPlacingOrder] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -54,37 +60,52 @@ const Checkout: React.FC = () => {
   });
 
   useEffect(() => {
-    const savedCart = JSON.parse(localStorage.getItem("cart") || "[]");
-    setCart(savedCart);
-  }, []);
-const removeItem = (
-  id: string,
-  size: string,
-  color: string
-) => {
-  const updatedCart = cart.filter(
-    (item) =>
-      !(
-        item._id === id &&
-        item.selectedSize === size &&
-        item.selectedColor === color
-      )
-  );
+    const mode = localStorage.getItem("checkoutMode");
 
-  setCart(updatedCart);
-  localStorage.setItem("cart", JSON.stringify(updatedCart));
-};
+    if (mode === "buyNow") {
+      const checkoutItems = JSON.parse(
+        localStorage.getItem("checkoutItems") || "[]"
+      );
+      setCart(checkoutItems);
+      setCheckoutMode("buyNow");
+    } else {
+      const savedCart = JSON.parse(localStorage.getItem("cart") || "[]");
+      setCart(savedCart);
+      setCheckoutMode("cart");
+    }
+  }, []);
+
+  const removeItem = (id: string, size: string, color: string) => {
+    const updatedCart = cart.filter(
+      (item) =>
+        !(
+          item._id === id &&
+          item.selectedSize === size &&
+          item.selectedColor === color
+        )
+    );
+
+    setCart(updatedCart);
+
+    if (checkoutMode === "buyNow") {
+      localStorage.setItem("checkoutItems", JSON.stringify(updatedCart));
+    } else {
+      localStorage.setItem("cart", JSON.stringify(updatedCart));
+    }
+  };
+
   const subtotal = useMemo(
     () => cart.reduce((acc, item) => acc + item.price * item.quantity, 0),
     [cart]
   );
 
-  const shipping = subtotal > 0 ? 150 : 0;
-  const taxes = subtotal * 0.1;
+  const shipping = subtotal > 0 ? 180 : 0;
+  const taxes = subtotal * 0.0101;
   const total = subtotal + shipping + taxes;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -93,13 +114,44 @@ const removeItem = (
 
   const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+
     setCardData((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
+  const validateAddress = () => {
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      address,
+      city,
+      state,
+      zipCode,
+    } = formData;
+
+    if (
+      !firstName.trim() ||
+      !lastName.trim() ||
+      !email.trim() ||
+      !phone.trim() ||
+      !address.trim() ||
+      !city.trim() ||
+      !state.trim() ||
+      !zipCode.trim()
+    ) {
+      alert("Please fill all address fields");
+      return false;
+    }
+
+    return true;
+  };
+
   const handleContinueToPayment = () => {
+    if (!validateAddress()) return;
     setCurrentStep("payment");
   };
 
@@ -107,19 +159,55 @@ const removeItem = (
     setCurrentStep("address");
   };
 
-  const handleCompletePurchase = () => {
-    const payload = {
-      customer: formData,
-      cart,
-      paymentMethod,
-      cardData: paymentMethod === "card" ? cardData : null,
-      subtotal,
-      shipping,
-      taxes,
-      total,
-    };
+  const handleCompletePurchase = async () => {
+    if (!validateAddress()) {
+      setCurrentStep("address");
+      return;
+    }
 
-    console.log("Order Placed:", payload);
+    if (cart.length === 0) {
+      alert("Cart is empty");
+      return;
+    }
+
+    if (paymentMethod !== "cod") {
+      alert("Currently only Cash on Delivery is available");
+      return;
+    }
+
+    try {
+      setPlacingOrder(true);
+
+      const payload = {
+        customer: formData,
+        items: cart,
+        paymentMethod: "cod",
+      };
+
+      const res = await axios.post("http://localhost:5000/api/orders", payload);
+      const createdOrder = res.data.order;
+
+      if (checkoutMode === "buyNow") {
+        localStorage.removeItem("checkoutItems");
+        localStorage.removeItem("checkoutMode");
+      } else {
+        localStorage.removeItem("cart");
+      }
+
+      setCart([]);
+
+      navigate("/ordersuccess", {
+        state: {
+          orderId: createdOrder.orderId,
+          orderDbId: createdOrder._id,
+        },
+      });
+    } catch (error: any) {
+      console.error(error);
+      alert(error?.response?.data?.message || "Order place nahi ho saka");
+    } finally {
+      setPlacingOrder(false);
+    }
   };
 
   const steps = [
@@ -194,12 +282,9 @@ const removeItem = (
       <div className="soft-glow bottom-[-120px] right-[-70px] h-80 w-80 bg-red-500" />
 
       <div className="relative mx-auto max-w-7xl">
-        {/* Header */}
         <div className="mb-8 rounded-[32px] border border-white/10 bg-white/[0.03] px-5 py-6 shadow-[0_20px_60px_rgba(0,0,0,0.25)] backdrop-blur-xl md:px-8 md:py-8">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-          
-
               <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-white md:text-3xl">
                 Complete Your{" "}
                 <span className="bg-gradient-to-r from-white via-red-200 to-red-500 bg-clip-text text-transparent">
@@ -243,7 +328,6 @@ const removeItem = (
           </div>
         </div>
 
-        {/* Stepper */}
         <div className="mb-8">
           <div className="glass-card inner-border rounded-[30px] p-4 md:p-5">
             <div className="grid grid-cols-2 gap-3">
@@ -257,9 +341,7 @@ const removeItem = (
                   <button
                     key={step.key}
                     type="button"
-                    onClick={() =>
-                      setCurrentStep(step.key as CheckoutStep)
-                    }
+                    onClick={() => setCurrentStep(step.key as CheckoutStep)}
                     className={`group relative overflow-hidden rounded-[24px] border px-4 py-4 text-left transition-all duration-300 ${
                       isActive
                         ? "border-red-500 bg-red-500/10 shadow-[0_15px_30px_rgba(220,38,38,0.18)]"
@@ -302,7 +384,6 @@ const removeItem = (
         </div>
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-          {/* LEFT SIDE */}
           <div className="lg:col-span-7">
             <div className="glass-card inner-border overflow-hidden rounded-[34px]">
               <div className="border-b border-white/10 px-6 py-6 md:px-8">
@@ -324,7 +405,7 @@ const removeItem = (
                     <p className="text-xs uppercase tracking-[0.18em] text-white/35">
                       Current Step
                     </p>
-                    <p className="mt-1 text-sm font-semibold  text-white">
+                    <p className="mt-1 text-sm font-semibold text-white">
                       {currentStep === "address" ? "Address" : "Payment"}
                     </p>
                   </div>
@@ -332,7 +413,6 @@ const removeItem = (
               </div>
 
               <div className="px-6 py-8 md:px-8">
-                {/* ADDRESS STEP */}
                 {currentStep === "address" && (
                   <div>
                     <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -488,11 +568,9 @@ const removeItem = (
                   </div>
                 )}
 
-                {/* PAYMENT STEP */}
                 {currentStep === "payment" && (
                   <div>
                     <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
-                      {/* COD */}
                       <div
                         className={`overflow-hidden rounded-[24px] border transition-all duration-300 ${
                           paymentMethod === "cod"
@@ -533,7 +611,6 @@ const removeItem = (
                         </button>
                       </div>
 
-                      {/* CARD */}
                       <div
                         className={`overflow-hidden rounded-[24px] border transition-all duration-300 ${
                           paymentMethod === "card"
@@ -574,7 +651,6 @@ const removeItem = (
                         </button>
                       </div>
 
-                      {/* INSTALLMENT */}
                       <div className="overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.02] opacity-70">
                         <button
                           type="button"
@@ -601,7 +677,6 @@ const removeItem = (
                       </div>
                     </div>
 
-                    {/* Expanded Method Details */}
                     {paymentMethod === "cod" && (
                       <div className="mb-6 rounded-[28px] border border-red-500/20 bg-red-500/5 p-6">
                         <div className="flex items-start gap-4">
@@ -682,10 +757,6 @@ const removeItem = (
                       </div>
                     )}
 
-                    {/* Promo */}
-                    
-
-                    {/* Action buttons */}
                     <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between">
                       <button
                         type="button"
@@ -699,11 +770,11 @@ const removeItem = (
                       <button
                         type="button"
                         onClick={handleCompletePurchase}
-                        disabled={cart.length === 0}
+                        disabled={cart.length === 0 || placingOrder}
                         className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lg transition-all hover:from-red-700 hover:to-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <CheckCircle2 size={18} />
-                        Complete Purchase
+                        {placingOrder ? "Placing Order..." : "Complete Purchase"}
                       </button>
                     </div>
                   </div>
@@ -712,155 +783,164 @@ const removeItem = (
             </div>
           </div>
 
-      {/* RIGHT SIDE ORDER SUMMARY */}
-<div className="lg:col-span-5">
-  <div className="glass-card inner-border sticky top-6 overflow-hidden rounded-[34px]">
-    <div className="relative overflow-hidden border-b border-white/10 bg-gradient-to-r from-red-600 to-rose-600 px-6 py-6 text-white">
-      <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-white/10 blur-3xl" />
-      <div className="relative">
-        <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-red-50">
-          <Receipt size={13} />
-          Order Summary
-        </div>
+          <div className="lg:col-span-5">
+            <div className="glass-card inner-border sticky top-6 overflow-hidden rounded-[34px]">
+              <div className="relative overflow-hidden border-b border-white/10 bg-gradient-to-r from-red-600 to-rose-600 px-6 py-6 text-white">
+                <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-white/10 blur-3xl" />
+                <div className="relative">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-red-50">
+                    <Receipt size={13} />
+                    Order Summary
+                  </div>
 
-        <h2 className="mt-3 text-2xl font-bold">Review Your Cart</h2>
-        <p className="mt-1 text-sm text-red-100">
-          Check items, billing and final total before purchase.
-        </p>
-      </div>
-    </div>
+                  <h2 className="mt-3 text-2xl font-bold">
+                    {checkoutMode === "buyNow"
+                      ? "Review Your Product"
+                      : "Review Your Cart"}
+                  </h2>
+                  <p className="mt-1 text-sm text-red-100">
+                    Check items, billing and final total before purchase.
+                  </p>
+                </div>
+              </div>
 
-    <div className="max-h-[430px] space-y-4 overflow-y-auto px-6 py-6 hide-scrollbar">
-      {cart.length > 0 ? (
-        cart.map((item, index) => (
-          <div
-            key={`${item._id}-${item.selectedSize}-${item.selectedColor}-${index}`}
-            className="group flex gap-4 rounded-[24px] border border-white/10 bg-white/[0.03] p-4 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.045]"
-          >
-            <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-white/5">
-              <img
-                src={item.mainImage}
-                alt={item.name}
-                className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-              />
-            </div>
+              <div className="max-h-[430px] space-y-4 overflow-y-auto px-6 py-6 hide-scrollbar">
+                {cart.length > 0 ? (
+                  cart.map((item, index) => (
+                    <div
+                      key={`${item._id}-${item.selectedSize}-${item.selectedColor}-${index}`}
+                      className="group flex gap-4 rounded-[24px] border border-white/10 bg-white/[0.03] p-4 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.045]"
+                    >
+                      <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-white/5">
+                        <img
+                          src={item.mainImage}
+                          alt={item.name}
+                          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                        />
+                      </div>
 
-            <div className="min-w-0 flex-1">
-              <h3 className="line-clamp-1 text-sm font-semibold text-white">
-                {item.name}
-              </h3>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="line-clamp-1 text-sm font-semibold text-white">
+                          {item.name}
+                        </h3>
 
-              <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                {item.selectedSize && (
-                  <span className="rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 font-medium text-red-300">
-                    Size: {item.selectedSize}
-                  </span>
-                )}
-                {item.selectedColor && (
-                  <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 font-medium text-white/65">
-                    Color: {item.selectedColor}
-                  </span>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                          {item.selectedSize && (
+                            <span className="rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 font-medium text-red-300">
+                              Size: {item.selectedSize}
+                            </span>
+                          )}
+                          {item.selectedColor && (
+                            <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 font-medium text-white/65">
+                              Color: {item.selectedColor}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="mt-4 flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-3">
+                            <span className="text-white/45">
+                              Qty: {item.quantity}
+                            </span>
+
+                            <button
+                              onClick={() =>
+                                removeItem(
+                                  item._id,
+                                  item.selectedSize,
+                                  item.selectedColor
+                                )
+                              }
+                              className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/55 transition hover:border-red-500/30 hover:bg-red-600 hover:text-white"
+                            >
+                              <Trash2 size={14} />
+                              Remove
+                            </button>
+                          </div>
+
+                          <span className="font-semibold text-red-400">
+                            Rs. {(item.price * item.quantity).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-[24px] border border-dashed border-white/10 bg-white/[0.03] px-5 py-12 text-center">
+                    <ShoppingBag className="mx-auto h-10 w-10 text-white/25" />
+                    <p className="mt-4 text-sm font-semibold text-white">
+                      Your cart is empty
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-white/45">
+                      Add some products to see your order summary here.
+                    </p>
+                  </div>
                 )}
               </div>
 
-              <div className="mt-4 flex items-center justify-between text-sm">
-                <div className="flex items-center gap-3">
-                  <span className="text-white/45">Qty: {item.quantity}</span>
+              <div className="border-t border-white/10 px-6 py-6">
+                <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+                  <div className="space-y-4 text-sm">
+                    <div className="flex items-center justify-between text-white/60">
+                      <span>Subtotal</span>
+                      <span className="font-semibold text-white">
+                        Rs. {subtotal.toLocaleString()}
+                      </span>
+                    </div>
 
-                  <button
-                    onClick={() =>
-                      removeItem(item._id, item.selectedSize, item.selectedColor)
-                    }
-                    className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/55 transition hover:border-red-500/30 hover:bg-red-600 hover:text-white"
-                  >
-                    <Trash2 size={14} />
-                    Remove
-                  </button>
+                    <div className="flex items-center justify-between text-white/60">
+                      <span>Shipping</span>
+                      <span className="font-semibold text-white">
+                        Rs. {shipping.toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-white/60">
+                      <span>Tax</span>
+                      <span className="font-semibold text-white">
+                        Rs. {taxes.toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="border-t border-dashed border-white/10 pt-4" />
+
+                    <div className="flex items-center justify-between text-base font-bold text-white">
+                      <span>Total</span>
+                      <span className="text-2xl text-red-400">
+                        Rs. {total.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <span className="font-semibold text-red-400">
-                  Rs. {(item.price * item.quantity).toLocaleString()}
-                </span>
+                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                      <ShieldCheck className="h-4 w-4 text-red-400" />
+                      Secure Checkout
+                    </div>
+                    <p className="mt-2 text-xs leading-6 text-white/45">
+                      Protected with premium encryption and a safer payment flow.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                      <Truck className="h-4 w-4 text-red-400" />
+                      Delivery Ready
+                    </div>
+                    <p className="mt-2 text-xs leading-6 text-white/45">
+                      Your order details are structured for smooth dispatch.
+                    </p>
+                  </div>
+                </div>
+
+                <p className="mt-5 text-center text-xs text-white/35">
+                  Secure checkout protected with premium encryption.
+                </p>
               </div>
             </div>
           </div>
-        ))
-      ) : (
-        <div className="rounded-[24px] border border-dashed border-white/10 bg-white/[0.03] px-5 py-12 text-center">
-          <ShoppingBag className="mx-auto h-10 w-10 text-white/25" />
-          <p className="mt-4 text-sm font-semibold text-white">
-            Your cart is empty
-          </p>
-          <p className="mt-2 text-sm leading-6 text-white/45">
-            Add some products to see your order summary here.
-          </p>
-        </div>
-      )}
-    </div>
-
-    <div className="border-t border-white/10 px-6 py-6">
-      <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
-        <div className="space-y-4 text-sm">
-          <div className="flex items-center justify-between text-white/60">
-            <span>Subtotal</span>
-            <span className="font-semibold text-white">
-              Rs. {subtotal.toLocaleString()}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between text-white/60">
-            <span>Shipping</span>
-            <span className="font-semibold text-white">
-              Rs. {shipping.toLocaleString()}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between text-white/60">
-            <span>Tax</span>
-            <span className="font-semibold text-white">
-              Rs. {taxes.toLocaleString()}
-            </span>
-          </div>
-
-          <div className="border-t border-dashed border-white/10 pt-4" />
-
-          <div className="flex items-center justify-between text-base font-bold text-white">
-            <span>Total</span>
-            <span className="text-2xl text-red-400">
-              Rs. {total.toLocaleString()}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-white">
-            <ShieldCheck className="h-4 w-4 text-red-400" />
-            Secure Checkout
-          </div>
-          <p className="mt-2 text-xs leading-6 text-white/45">
-            Protected with premium encryption and a safer payment flow.
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-white">
-            <Truck className="h-4 w-4 text-red-400" />
-            Delivery Ready
-          </div>
-          <p className="mt-2 text-xs leading-6 text-white/45">
-            Your order details are structured for smooth dispatch.
-          </p>
-        </div>
-      </div>
-
-      <p className="mt-5 text-center text-xs text-white/35">
-        Secure checkout protected with premium encryption.
-      </p>
-    </div>
-  </div>
-</div>
         </div>
       </div>
     </section>

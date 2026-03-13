@@ -14,6 +14,8 @@ type User = {
   photoURL?: string;
   image?: string;
   avatar?: string;
+  picture?: string;
+  photo?: string;
 };
 
 const Navbar: React.FC = () => {
@@ -22,7 +24,6 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-  // Normalize user object for email login + google login
   const normalizeUser = (rawUser: any): User | null => {
     if (!rawUser) return null;
 
@@ -37,30 +38,66 @@ const Navbar: React.FC = () => {
       fullName: rawUser.fullName || "",
       username: rawUser.username || "",
       email: rawUser.email || "",
-      photoURL: rawUser.photoURL || rawUser.picture || rawUser.photo || "",
-      image: rawUser.image || rawUser.picture || "",
-      avatar: rawUser.avatar || "",
+      photoURL:
+        rawUser.photoURL ||
+        rawUser.picture ||
+        rawUser.photo ||
+        rawUser.avatar ||
+        rawUser.image ||
+        "",
+      image: rawUser.image || rawUser.picture || rawUser.photo || "",
+      avatar: rawUser.avatar || rawUser.image || rawUser.picture || "",
+      picture: rawUser.picture || "",
+      photo: rawUser.photo || "",
     };
   };
 
-  // Load user from localStorage
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
+  const getStoredAuthUser = () => {
+    const localUser = localStorage.getItem("user");
+    const sessionUser = sessionStorage.getItem("user");
 
-    if (storedUser || token) {
-      try {
-        const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-        const normalized = normalizeUser(parsedUser);
-        setUser(normalized);
-      } catch (error) {
-        console.error("Invalid user data in localStorage:", error);
-        setUser(null);
-      }
+    const rawUser = localUser || sessionUser;
+
+    if (!rawUser) return null;
+
+    try {
+      return normalizeUser(JSON.parse(rawUser));
+    } catch (error) {
+      console.error("Invalid stored user:", error);
+      return null;
     }
+  };
+
+  const syncUser = () => {
+    const storedUser = getStoredAuthUser();
+    setUser(storedUser);
+  };
+
+  useEffect(() => {
+    syncUser();
+
+    // other tabs/windows ke liye
+    const handleStorageChange = () => {
+      syncUser();
+    };
+
+    // same tab ke liye custom event
+    const handleAuthChanged = () => {
+      syncUser();
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("auth-changed", handleAuthChanged as EventListener);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener(
+        "auth-changed",
+        handleAuthChanged as EventListener
+      );
+    };
   }, []);
 
-  // Close dropdown outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -95,7 +132,13 @@ const Navbar: React.FC = () => {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       localStorage.removeItem("googleUser");
+
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("user");
+      sessionStorage.removeItem("googleUser");
+
       setUser(null);
+      window.dispatchEvent(new Event("auth-changed"));
 
       await MySwal.fire({
         title: "Logged Out!",
@@ -134,7 +177,14 @@ const Navbar: React.FC = () => {
 
   const getAvatar = () => {
     if (!user) return "";
-    return user.photoURL || user.image || user.avatar || "";
+    return (
+      user.photoURL ||
+      user.image ||
+      user.avatar ||
+      user.picture ||
+      user.photo ||
+      ""
+    );
   };
 
   return (
@@ -204,47 +254,27 @@ const Navbar: React.FC = () => {
             {user ? (
               <div className="flex items-center gap-2 relative" ref={dropdownRef}>
                 <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="glass-red flex items-center gap-3 rounded-full pl-2 pr-3 py-1.5 hover:border-red-500/70 transition-all duration-300"
-                >
-                  {getAvatar() ? (
-                    <img
-                      src={getAvatar()}
-                      alt={getDisplayName()}
-                      className="w-10 h-10 rounded-full object-cover border border-red-300/20 shadow-[0_0_16px_rgba(202,8,8,0.35)]"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#ff3b3b] to-[#8b0000] flex items-center justify-center text-white font-bold text-sm shadow-[0_0_16px_rgba(202,8,8,0.35)] border border-red-300/20">
-                      {getInitial(getDisplayName())}
-                    </div>
-                  )}
+  onClick={() => setDropdownOpen(!dropdownOpen)}
+  className="glass-red flex items-center gap-3 rounded-full px-4 py-2 hover:border-red-500/70 transition-all duration-300"
+>
+  <span className="text-sm font-semibold text-white">
+    {getDisplayName()}
+  </span>
 
-                  <div className="hidden sm:flex flex-col items-start leading-tight max-w-[120px]">
-                    <span className="text-[11px] text-white/45">Welcome</span>
-                    <span className="text-sm font-semibold text-white truncate">
-                      {getDisplayName()}
-                    </span>
-                  </div>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className={`w-4 h-4 text-white/70 transition-transform duration-300 ${
+      dropdownOpen ? "rotate-180" : ""
+    }`}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+  </svg>
+</button>
 
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className={`w-4 h-4 text-white/70 transition-transform duration-300 ${
-                      dropdownOpen ? "rotate-180" : ""
-                    }`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
-
-                {/* Direct Logout Button */}
                 <button
                   onClick={handleLogout}
                   className="glass-red px-4 py-2.5 rounded-full text-sm font-medium text-red-300 hover:bg-red-600 hover:text-white hover:border-red-500/70 transition-all duration-300"

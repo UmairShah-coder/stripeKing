@@ -103,40 +103,54 @@ const ProductDetail: React.FC = () => {
     product?.oldPrice && product.oldPrice > product.price
       ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
       : 0;
+const handleAddToCart = () => {
+  if (!product || !selectedSize || !selectedColor || stock === 0) return;
 
-  const handleAddToCart = () => {
-    if (!product || !selectedSize || !selectedColor || stock === 0) return;
+  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
 
-    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  const existing = cart.find(
+    (item: any) =>
+      item._id === product._id &&
+      item.selectedSize === selectedSize &&
+      item.selectedColor === selectedColor
+  );
 
-    const existing = cart.find(
-      (item: any) =>
-        item._id === product._id &&
-        item.selectedSize === selectedSize &&
-        item.selectedColor === selectedColor
-    );
+  if (existing) {
+    existing.quantity += quantity;
+  } else {
+    cart.push({
+      _id: product._id,
+      name: product.name,
+      price: product.price,
+      mainImage: product.mainImage,
+      quantity,
+      selectedSize,
+      selectedColor,
+    });
+  }
 
-    if (existing) {
-      existing.quantity += quantity;
-    } else {
-      cart.push({
-        _id: product._id,
-        name: product.name,
-        price: product.price,
-        mainImage: product.mainImage,
-        quantity,
-        selectedSize,
-        selectedColor,
-      });
-    }
+  localStorage.setItem("cart", JSON.stringify(cart));
+  alert("Product added to cart");
+};
+const handleBuyNow = () => {
+  if (!product || !selectedSize || !selectedColor || stock === 0) return;
 
-    localStorage.setItem("cart", JSON.stringify(cart));
-    navigate("/cart");
-  };
+  const buyNowItem = [
+    {
+      _id: product._id,
+      name: product.name,
+      price: product.price,
+      mainImage: product.mainImage,
+      quantity,
+      selectedSize,
+      selectedColor,
+    },
+  ];
 
-  const handleBuyNow = () => {
-    handleAddToCart();
-  };
+  localStorage.setItem("checkoutItems", JSON.stringify(buyNowItem));
+  localStorage.setItem("checkoutMode", "buyNow");
+  navigate("/cart");
+};
 
   const handleOpenChat = () => {
     navigate("/chat");
