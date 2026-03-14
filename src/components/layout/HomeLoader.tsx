@@ -204,7 +204,7 @@ const HomeLoader: React.FC<HomeLoaderProps> = ({ children }) => {
           </div>
 
           {/* Brand Name */}
-          <h1 className="luxury-text brand-animate mt-8 text-3xl font-extrabold uppercase tracking-[0.22em] sm:text-4xl">
+          <h1 className="luxury-text brand-animate mt-8 text-3xl font-extrabold uppercase tracking-[0.22em] sm:text-3xl">
             StripeKing
           </h1>
 

@@ -76,12 +76,10 @@ const Navbar: React.FC = () => {
   useEffect(() => {
     syncUser();
 
-    // other tabs/windows ke liye
     const handleStorageChange = () => {
       syncUser();
     };
 
-    // same tab ke liye custom event
     const handleAuthChanged = () => {
       syncUser();
     };
@@ -170,23 +168,6 @@ const Navbar: React.FC = () => {
     );
   };
 
-  const getInitial = (name?: string) => {
-    if (!name) return "U";
-    return name.charAt(0).toUpperCase();
-  };
-
-  const getAvatar = () => {
-    if (!user) return "";
-    return (
-      user.photoURL ||
-      user.image ||
-      user.avatar ||
-      user.picture ||
-      user.photo ||
-      ""
-    );
-  };
-
   return (
     <header className="w-full top-0 z-50 bg-[#050505]/95 backdrop-blur-md text-white border-b border-red-900/30 shadow-[0_10px_30px_rgba(0,0,0,0.45)]">
       <style>{`
@@ -254,26 +235,26 @@ const Navbar: React.FC = () => {
             {user ? (
               <div className="flex items-center gap-2 relative" ref={dropdownRef}>
                 <button
-  onClick={() => setDropdownOpen(!dropdownOpen)}
-  className="glass-red flex items-center gap-3 rounded-full px-4 py-2 hover:border-red-500/70 transition-all duration-300"
->
-  <span className="text-sm font-semibold text-white">
-    {getDisplayName()}
-  </span>
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="glass-red flex items-center gap-3 rounded-full px-4 py-2 hover:border-red-500/70 transition-all duration-300"
+                >
+                  <span className="text-sm font-semibold text-white">
+                    {getDisplayName()}
+                  </span>
 
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className={`w-4 h-4 text-white/70 transition-transform duration-300 ${
-      dropdownOpen ? "rotate-180" : ""
-    }`}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-  </svg>
-</button>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className={`w-4 h-4 text-white/70 transition-transform duration-300 ${
+                      dropdownOpen ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
 
                 <button
                   onClick={handleLogout}
