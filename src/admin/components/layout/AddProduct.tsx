@@ -107,7 +107,6 @@ const AddProduct: React.FC = () => {
       setMainPreview(URL.createObjectURL(e.target.files[0]));
     }
   };
-  const removeMainImage = () => { setMainImage(null); setMainPreview(null); };
 
   // Gallery Images
   const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
