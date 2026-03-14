@@ -185,6 +185,7 @@ const Checkout: React.FC = () => {
       };
 
       const res = await axios.post("http://localhost:5000/api/orders", payload);
+
       const createdOrder = res.data.order;
 
       if (checkoutMode === "buyNow") {

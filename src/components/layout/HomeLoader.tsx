@@ -12,7 +12,7 @@ const HomeLoader: React.FC<HomeLoaderProps> = ({ children }) => {
   useEffect(() => {
     if (location.pathname === "/") {
       setLoading(true);
-      const timer = setTimeout(() => setLoading(false), 2500);
+      const timer = setTimeout(() => setLoading(false), 2200);
       return () => clearTimeout(timer);
     } else {
       setLoading(false);
