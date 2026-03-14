@@ -92,7 +92,7 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!hideLayout && location.pathname !== "/") {
       setLoading(true);
-      const timer = setTimeout(() => setLoading(false), 1700);
+      const timer = setTimeout(() => setLoading(false), 1500);
       return () => clearTimeout(timer);
     } else {
       setLoading(false);

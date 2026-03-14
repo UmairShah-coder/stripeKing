@@ -17,6 +17,9 @@ import {
   Receipt,
   ArrowLeft,
   Trash2,
+  Plus,
+  Minus,
+  Package2,
 } from "lucide-react";
 
 type CartItem = {
@@ -31,6 +34,9 @@ type CartItem = {
 
 type PaymentMethod = "cod" | "card" | "installment";
 type CheckoutStep = "address" | "payment";
+
+const CHECKOUT_FORM_KEY = "checkoutFormData";
+const CHECKOUT_CARD_KEY = "checkoutCardData";
 
 const Checkout: React.FC = () => {
   const navigate = useNavigate();
@@ -48,8 +54,6 @@ const Checkout: React.FC = () => {
     phone: "",
     address: "",
     city: "",
-    state: "",
-    zipCode: "",
   });
 
   const [cardData, setCardData] = useState({
@@ -59,21 +63,85 @@ const Checkout: React.FC = () => {
     cvv: "",
   });
 
-  useEffect(() => {
-    const mode = localStorage.getItem("checkoutMode");
+  const normalizeCartItems = (items: any[]): CartItem[] => {
+    if (!Array.isArray(items)) return [];
 
-    if (mode === "buyNow") {
-      const checkoutItems = JSON.parse(
-        localStorage.getItem("checkoutItems") || "[]"
-      );
-      setCart(checkoutItems);
-      setCheckoutMode("buyNow");
-    } else {
-      const savedCart = JSON.parse(localStorage.getItem("cart") || "[]");
-      setCart(savedCart);
-      setCheckoutMode("cart");
+    const merged = new Map<string, CartItem>();
+
+    items.forEach((raw) => {
+      if (!raw?._id) return;
+
+      const quantity = Math.max(1, Number(raw.quantity) || 1);
+      const selectedSize = String(raw.selectedSize || "").trim();
+      const selectedColor = String(raw.selectedColor || "").trim();
+
+      const normalized: CartItem = {
+        _id: String(raw._id),
+        name: String(raw.name || "Product"),
+        price: Number(raw.price) || 0,
+        mainImage: String(raw.mainImage || "/placeholder.png"),
+        quantity,
+        selectedSize,
+        selectedColor,
+      };
+
+      const key = `${normalized._id}__${normalized.selectedSize}__${normalized.selectedColor}`;
+
+      if (merged.has(key)) {
+        const existing = merged.get(key)!;
+        merged.set(key, {
+          ...existing,
+          quantity: existing.quantity + normalized.quantity,
+        });
+      } else {
+        merged.set(key, normalized);
+      }
+    });
+
+    return Array.from(merged.values());
+  };
+
+  const getStorageKey = (mode: "cart" | "buyNow") =>
+    mode === "buyNow" ? "checkoutItems" : "cart";
+
+  useEffect(() => {
+    const mode = localStorage.getItem("checkoutMode") === "buyNow" ? "buyNow" : "cart";
+    setCheckoutMode(mode);
+
+    const storageKey = getStorageKey(mode);
+    const rawItems = JSON.parse(localStorage.getItem(storageKey) || "[]");
+    const normalizedItems = normalizeCartItems(rawItems);
+
+    setCart(normalizedItems);
+    localStorage.setItem(storageKey, JSON.stringify(normalizedItems));
+
+    const savedFormData = localStorage.getItem(CHECKOUT_FORM_KEY);
+    const savedCardData = localStorage.getItem(CHECKOUT_CARD_KEY);
+
+    if (savedFormData) {
+      setFormData(JSON.parse(savedFormData));
+    }
+
+    if (savedCardData) {
+      setCardData(JSON.parse(savedCardData));
     }
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(CHECKOUT_FORM_KEY, JSON.stringify(formData));
+  }, [formData]);
+
+  useEffect(() => {
+    localStorage.setItem(CHECKOUT_CARD_KEY, JSON.stringify(cardData));
+  }, [cardData]);
+
+  const persistCart = (updatedCart: CartItem[]) => {
+    const normalizedItems = normalizeCartItems(updatedCart);
+    setCart(normalizedItems);
+
+    const storageKey = getStorageKey(checkoutMode);
+    localStorage.setItem(storageKey, JSON.stringify(normalizedItems));
+  };
 
   const removeItem = (id: string, size: string, color: string) => {
     const updatedCart = cart.filter(
@@ -85,22 +153,49 @@ const Checkout: React.FC = () => {
         )
     );
 
-    setCart(updatedCart);
+    persistCart(updatedCart);
+  };
 
-    if (checkoutMode === "buyNow") {
-      localStorage.setItem("checkoutItems", JSON.stringify(updatedCart));
-    } else {
-      localStorage.setItem("cart", JSON.stringify(updatedCart));
-    }
+  const updateQuantity = (
+    id: string,
+    size: string,
+    color: string,
+    type: "increase" | "decrease"
+  ) => {
+    const updatedCart = cart.map((item) => {
+      if (
+        item._id === id &&
+        item.selectedSize === size &&
+        item.selectedColor === color
+      ) {
+        const currentQty = Math.max(1, Number(item.quantity) || 1);
+        const newQuantity =
+          type === "increase" ? currentQty + 1 : Math.max(1, currentQty - 1);
+
+        return {
+          ...item,
+          quantity: newQuantity,
+        };
+      }
+
+      return item;
+    });
+
+    persistCart(updatedCart);
   };
 
   const subtotal = useMemo(
-    () => cart.reduce((acc, item) => acc + item.price * item.quantity, 0),
+    () => cart.reduce((acc, item) => acc + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0),
     [cart]
   );
 
-  const shipping = subtotal > 0 ? 180 : 0;
-  const taxes = subtotal * 0.0101;
+  const totalItems = useMemo(
+    () => cart.reduce((acc, item) => acc + (Number(item.quantity) || 1), 0),
+    [cart]
+  );
+
+  const shipping = cart.length > 0 ? 180 : 0;
+  const taxes = cart.length > 0 ? 50 : 0;
   const total = subtotal + shipping + taxes;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,16 +217,7 @@ const Checkout: React.FC = () => {
   };
 
   const validateAddress = () => {
-    const {
-      firstName,
-      lastName,
-      email,
-      phone,
-      address,
-      city,
-      state,
-      zipCode,
-    } = formData;
+    const { firstName, lastName, email, phone, address, city } = formData;
 
     if (
       !firstName.trim() ||
@@ -139,9 +225,7 @@ const Checkout: React.FC = () => {
       !email.trim() ||
       !phone.trim() ||
       !address.trim() ||
-      !city.trim() ||
-      !state.trim() ||
-      !zipCode.trim()
+      !city.trim()
     ) {
       alert("Please fill all address fields");
       return false;
@@ -185,7 +269,6 @@ const Checkout: React.FC = () => {
       };
 
       const res = await axios.post("http://localhost:5000/api/orders", payload);
-
       const createdOrder = res.data.order;
 
       if (checkoutMode === "buyNow") {
@@ -194,6 +277,9 @@ const Checkout: React.FC = () => {
       } else {
         localStorage.removeItem("cart");
       }
+
+      localStorage.removeItem(CHECKOUT_FORM_KEY);
+      localStorage.removeItem(CHECKOUT_CARD_KEY);
 
       setCart([]);
 
@@ -216,8 +302,37 @@ const Checkout: React.FC = () => {
     { key: "payment", label: "Payment", icon: CreditCard },
   ];
 
+  const getColorStyle = (color: string) => {
+    const lower = color.toLowerCase().trim();
+
+    const colorMap: Record<string, string> = {
+      red: "#ef4444",
+      blue: "#3b82f6",
+      green: "#22c55e",
+      yellow: "#eab308",
+      black: "#111111",
+      white: "#ffffff",
+      gray: "#6b7280",
+      grey: "#6b7280",
+      purple: "#a855f7",
+      pink: "#ec4899",
+      orange: "#f97316",
+      brown: "#8b5e3c",
+      beige: "#d6c6a8",
+      maroon: "#7f1d1d",
+      navy: "#1e3a8a",
+      gold: "#d4af37",
+      silver: "#c0c0c0",
+      cream: "#f5f5dc",
+      olive: "#808000",
+      skyblue: "#38bdf8",
+    };
+
+    return colorMap[lower] || color || "#6b7280";
+  };
+
   return (
-    <section className="relative min-h-screen overflow-hidden bg-black px-4 py-8 text-white md:px-8 lg:px-10">
+    <section className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,#190505,#080808_45%,#040404_100%)] px-4 py-8 text-white md:px-8 lg:px-10">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
         * { font-family: 'Poppins', sans-serif; }
@@ -286,7 +401,7 @@ const Checkout: React.FC = () => {
         <div className="mb-8 rounded-[32px] border border-white/10 bg-white/[0.03] px-5 py-6 shadow-[0_20px_60px_rgba(0,0,0,0.25)] backdrop-blur-xl md:px-8 md:py-8">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-white md:text-3xl">
+              <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-white md:text-4xl">
                 Complete Your{" "}
                 <span className="bg-gradient-to-r from-white via-red-200 to-red-500 bg-clip-text text-transparent">
                   Order
@@ -294,9 +409,8 @@ const Checkout: React.FC = () => {
               </h1>
 
               <p className="mt-2 max-w-2xl text-sm leading-7 text-white/55 md:text-base">
-                Clean, premium and modern checkout experience with structured
-                address details, secure payment section, and a stronger order
-                summary layout.
+                Premium checkout experience with persistent local save, fixed billing,
+                cleaner summary, and proper quantity handling for every selected product.
               </p>
             </div>
 
@@ -316,13 +430,13 @@ const Checkout: React.FC = () => {
               <div className="glass-soft rounded-2xl px-4 py-4 text-center">
                 <Receipt className="mx-auto h-5 w-5 text-red-400" />
                 <p className="mt-2 text-xs font-medium text-white/60">
-                  Clear Billing
+                  Fixed Billing
                 </p>
               </div>
               <div className="glass-soft rounded-2xl px-4 py-4 text-center">
                 <ShoppingBag className="mx-auto h-5 w-5 text-red-400" />
                 <p className="mt-2 text-xs font-medium text-white/60">
-                  Smooth Flow
+                  Saved Locally
                 </p>
               </div>
             </div>
@@ -438,12 +552,12 @@ const Checkout: React.FC = () => {
                       </div>
 
                       <div className="glass-soft rounded-2xl p-4">
-                        <Truck className="h-5 w-5 text-red-400" />
+                        <Package2 className="h-5 w-5 text-red-400" />
                         <p className="mt-3 text-sm font-semibold text-white">
-                          Order Dispatch
+                          Local Save
                         </p>
                         <p className="mt-1 text-xs leading-6 text-white/45">
-                          We use this for smooth delivery handling.
+                          Your checkout data stays saved in browser.
                         </p>
                       </div>
                     </div>
@@ -525,22 +639,6 @@ const Checkout: React.FC = () => {
                         value={formData.city}
                         onChange={handleInputChange}
                         placeholder="City"
-                        className="input-dark h-14 w-full rounded-2xl px-4 text-sm"
-                      />
-
-                      <input
-                        name="state"
-                        value={formData.state}
-                        onChange={handleInputChange}
-                        placeholder="State / Province"
-                        className="input-dark h-14 w-full rounded-2xl px-4 text-sm"
-                      />
-
-                      <input
-                        name="zipCode"
-                        value={formData.zipCode}
-                        onChange={handleInputChange}
-                        placeholder="Zip / Postal Code"
                         className="input-dark h-14 w-full rounded-2xl px-4 text-sm md:col-span-2"
                       />
                     </div>
@@ -800,72 +898,122 @@ const Checkout: React.FC = () => {
                       : "Review Your Cart"}
                   </h2>
                   <p className="mt-1 text-sm text-red-100">
-                    Check items, billing and final total before purchase.
+                    {cart.length} variant(s) • {totalItems} item(s) selected
                   </p>
                 </div>
               </div>
 
-              <div className="max-h-[430px] space-y-4 overflow-y-auto px-6 py-6 hide-scrollbar">
+              {/* Compact professional summary list */}
+              <div className="max-h-[380px] overflow-y-auto px-6 py-5 hide-scrollbar">
                 {cart.length > 0 ? (
-                  cart.map((item, index) => (
-                    <div
-                      key={`${item._id}-${item.selectedSize}-${item.selectedColor}-${index}`}
-                      className="group flex gap-4 rounded-[24px] border border-white/10 bg-white/[0.03] p-4 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.045]"
-                    >
-                      <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-white/5">
-                        <img
-                          src={item.mainImage}
-                          alt={item.name}
-                          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                        />
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <h3 className="line-clamp-1 text-sm font-semibold text-white">
-                          {item.name}
-                        </h3>
-
-                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                          {item.selectedSize && (
-                            <span className="rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 font-medium text-red-300">
-                              Size: {item.selectedSize}
-                            </span>
-                          )}
-                          {item.selectedColor && (
-                            <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 font-medium text-white/65">
-                              Color: {item.selectedColor}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="mt-4 flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-3">
-                            <span className="text-white/45">
-                              Qty: {item.quantity}
-                            </span>
-
-                            <button
-                              onClick={() =>
-                                removeItem(
-                                  item._id,
-                                  item.selectedSize,
-                                  item.selectedColor
-                                )
-                              }
-                              className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/55 transition hover:border-red-500/30 hover:bg-red-600 hover:text-white"
-                            >
-                              <Trash2 size={14} />
-                              Remove
-                            </button>
+                  <div className="space-y-3">
+                    {cart.map((item, index) => (
+                      <div
+                        key={`${item._id}-${item.selectedSize}-${item.selectedColor}-${index}`}
+                        className="rounded-[22px] border border-white/10 bg-white/[0.03] p-3 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.045]"
+                      >
+                        <div className="flex gap-3">
+                          <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-white/5">
+                            <img
+                              src={item.mainImage}
+                              alt={item.name}
+                              className="h-full w-full object-cover"
+                            />
                           </div>
 
-                          <span className="font-semibold text-red-400">
-                            Rs. {(item.price * item.quantity).toLocaleString()}
-                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <h3 className="line-clamp-2 text-sm font-semibold text-white">
+                                {item.name}
+                              </h3>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  removeItem(
+                                    item._id,
+                                    item.selectedSize,
+                                    item.selectedColor
+                                  )
+                                }
+                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/55 transition hover:border-red-500/30 hover:bg-red-600 hover:text-white"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {item.selectedSize && (
+                                <span className="rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-[11px] font-medium text-red-300">
+                                  Size: {item.selectedSize}
+                                </span>
+                              )}
+
+                              {item.selectedColor && (
+                                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/70">
+                                  <span
+                                    className="h-3 w-3 rounded-full border border-white/20"
+                                    style={{
+                                      backgroundColor: getColorStyle(item.selectedColor),
+                                    }}
+                                  />
+                                  {item.selectedColor}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="mt-3 flex items-center justify-between gap-3">
+                              <div className="inline-flex items-center overflow-hidden rounded-xl border border-white/10 bg-black/20">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateQuantity(
+                                      item._id,
+                                      item.selectedSize,
+                                      item.selectedColor,
+                                      "decrease"
+                                    )
+                                  }
+                                  className="px-2.5 py-2 text-white/75 transition hover:bg-white/[0.04] hover:text-white"
+                                >
+                                  <Minus size={13} />
+                                </button>
+
+                                <span className="min-w-[36px] text-center text-sm font-semibold text-white">
+                                  {Math.max(1, Number(item.quantity) || 1)}
+                                </span>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateQuantity(
+                                      item._id,
+                                      item.selectedSize,
+                                      item.selectedColor,
+                                      "increase"
+                                    )
+                                  }
+                                  className="px-2.5 py-2 text-white/75 transition hover:bg-white/[0.04] hover:text-white"
+                                >
+                                  <Plus size={13} />
+                                </button>
+                              </div>
+
+                              <div className="text-right">
+                                <p className="text-[11px] text-white/40">Line Total</p>
+                                <p className="text-sm font-bold text-red-400">
+                                  Rs. {(
+                                    (Number(item.price) || 0) *
+                                    (Math.max(1, Number(item.quantity) || 1))
+                                  ).toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 ) : (
                   <div className="rounded-[24px] border border-dashed border-white/10 bg-white/[0.03] px-5 py-12 text-center">
                     <ShoppingBag className="mx-auto h-10 w-10 text-white/25" />
@@ -880,6 +1028,21 @@ const Checkout: React.FC = () => {
               </div>
 
               <div className="border-t border-white/10 px-6 py-6">
+                <div className="mb-4 grid grid-cols-3 gap-3">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-center">
+                    <p className="text-xs text-white/40">Variants</p>
+                    <p className="mt-1 text-lg font-bold text-white">{cart.length}</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-center">
+                    <p className="text-xs text-white/40">Items</p>
+                    <p className="mt-1 text-lg font-bold text-white">{totalItems}</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-center">
+                    <p className="text-xs text-white/40">Tax</p>
+                    <p className="mt-1 text-lg font-bold text-white">Rs. {taxes}</p>
+                  </div>
+                </div>
+
                 <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
                   <div className="space-y-4 text-sm">
                     <div className="flex items-center justify-between text-white/60">
@@ -928,16 +1091,16 @@ const Checkout: React.FC = () => {
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                     <div className="flex items-center gap-2 text-sm font-semibold text-white">
                       <Truck className="h-4 w-4 text-red-400" />
-                      Delivery Ready
+                      Local Persistence
                     </div>
                     <p className="mt-2 text-xs leading-6 text-white/45">
-                      Your order details are structured for smooth dispatch.
+                      Cart and checkout data stay saved in local storage.
                     </p>
                   </div>
                 </div>
 
                 <p className="mt-5 text-center text-xs text-white/35">
-                  Secure checkout protected with premium encryption.
+                  Your cart and checkout form are saved locally in the browser.
                 </p>
               </div>
             </div>

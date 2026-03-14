@@ -33,6 +33,27 @@ interface Product {
   netWeight?: string;
 }
 
+interface Review {
+  id: number;
+  name: string;
+  rating: number;
+  comment: string;
+  date: string;
+}
+
+type PendingAction = "addToCart" | "buyNow";
+
+interface PendingProductAction {
+  from: string;
+  action: PendingAction;
+  productData: {
+    productId?: string;
+    selectedSize: string;
+    selectedColor: string;
+    quantity: number;
+  };
+}
+
 const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -46,6 +67,121 @@ const ProductDetail: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [hasHandledPendingAction, setHasHandledPendingAction] = useState(false);
+
+  const [reviews, setReviews] = useState<Review[]>([
+    {
+      id: 1,
+      name: "Ali Raza",
+      rating: 5,
+      comment:
+        "Quality bohat achi hai. Packaging premium thi aur delivery bhi fast thi.",
+      date: "2 days ago",
+    },
+    {
+      id: 2,
+      name: "Ayesha Khan",
+      rating: 4,
+      comment:
+        "Product bilkul same as shown tha. Finishing aur overall look bohat achi lagi.",
+      date: "5 days ago",
+    },
+  ]);
+
+  const [reviewForm, setReviewForm] = useState({
+    name: "",
+    rating: 0,
+    comment: "",
+  });
+
+  const isLoggedIn = () => {
+    return !!localStorage.getItem("token");
+  };
+
+  const redirectToLogin = (action: PendingAction) => {
+    const pendingData: PendingProductAction = {
+      from: `/product/${id}`,
+      action,
+      productData: {
+        productId: product?._id,
+        selectedSize,
+        selectedColor,
+        quantity,
+      },
+    };
+
+    localStorage.setItem("postLoginRedirect", JSON.stringify(pendingData));
+    navigate("/login");
+  };
+
+  const addProductToCart = (
+    targetProduct: Product,
+    targetSize: string,
+    targetColor: string,
+    targetQuantity: number
+  ) => {
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+
+    const existing = cart.find(
+      (item: any) =>
+        item._id === targetProduct._id &&
+        item.selectedSize === targetSize &&
+        item.selectedColor === targetColor
+    );
+
+    if (existing) {
+      existing.quantity += targetQuantity;
+    } else {
+      cart.push({
+        _id: targetProduct._id,
+        name: targetProduct.name,
+        price: targetProduct.price,
+        mainImage: targetProduct.mainImage,
+        quantity: targetQuantity,
+        selectedSize: targetSize,
+        selectedColor: targetColor,
+      });
+    }
+
+    localStorage.setItem("cart", JSON.stringify(cart));
+  };
+
+  const addProductToCheckout = (
+    targetProduct: Product,
+    targetSize: string,
+    targetColor: string,
+    targetQuantity: number
+  ) => {
+    const existingCheckoutItems = JSON.parse(
+      localStorage.getItem("checkoutItems") || "[]"
+    );
+
+    const newItem = {
+      _id: targetProduct._id,
+      name: targetProduct.name,
+      price: targetProduct.price,
+      mainImage: targetProduct.mainImage,
+      quantity: targetQuantity,
+      selectedSize: targetSize,
+      selectedColor: targetColor,
+    };
+
+    const existingIndex = existingCheckoutItems.findIndex(
+      (item: any) =>
+        item._id === targetProduct._id &&
+        item.selectedSize === targetSize &&
+        item.selectedColor === targetColor
+    );
+
+    if (existingIndex !== -1) {
+      existingCheckoutItems[existingIndex].quantity += targetQuantity;
+    } else {
+      existingCheckoutItems.push(newItem);
+    }
+
+    localStorage.setItem("checkoutItems", JSON.stringify(existingCheckoutItems));
+    localStorage.setItem("checkoutMode", "buyNow");
+  };
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -83,7 +219,9 @@ const ProductDetail: React.FC = () => {
   const colorsForSize = useMemo(
     () =>
       product
-        ? product.variants.filter((v) => v.size === selectedSize).map((v) => v.color)
+        ? product.variants
+            .filter((v) => v.size === selectedSize)
+            .map((v) => v.color)
         : [],
     [product, selectedSize]
   );
@@ -103,57 +241,149 @@ const ProductDetail: React.FC = () => {
     product?.oldPrice && product.oldPrice > product.price
       ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
       : 0;
-const handleAddToCart = () => {
-  if (!product || !selectedSize || !selectedColor || stock === 0) return;
 
-  const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+  const averageRating = useMemo(() => {
+    if (!reviews.length) return 0;
+    const total = reviews.reduce((sum, r) => sum + r.rating, 0);
+    return (total / reviews.length).toFixed(1);
+  }, [reviews]);
 
-  const existing = cart.find(
-    (item: any) =>
-      item._id === product._id &&
-      item.selectedSize === selectedSize &&
-      item.selectedColor === selectedColor
-  );
+  useEffect(() => {
+    if (!product || !isLoggedIn() || hasHandledPendingAction) return;
 
-  if (existing) {
-    existing.quantity += quantity;
-  } else {
-    cart.push({
-      _id: product._id,
-      name: product.name,
-      price: product.price,
-      mainImage: product.mainImage,
-      quantity,
-      selectedSize,
-      selectedColor,
-    });
-  }
+    const savedRedirect = localStorage.getItem("postLoginRedirect");
+    if (!savedRedirect) return;
 
-  localStorage.setItem("cart", JSON.stringify(cart));
-  alert("Product added to cart");
-};
-const handleBuyNow = () => {
-  if (!product || !selectedSize || !selectedColor || stock === 0) return;
+    try {
+      const parsed: PendingProductAction = JSON.parse(savedRedirect);
 
-  const buyNowItem = [
-    {
-      _id: product._id,
-      name: product.name,
-      price: product.price,
-      mainImage: product.mainImage,
-      quantity,
-      selectedSize,
-      selectedColor,
-    },
-  ];
+      if (
+        parsed?.from !== `/product/${id}` ||
+        parsed?.productData?.productId !== product._id
+      ) {
+        return;
+      }
 
-  localStorage.setItem("checkoutItems", JSON.stringify(buyNowItem));
-  localStorage.setItem("checkoutMode", "buyNow");
-  navigate("/cart");
-};
+      const pendingSize = parsed.productData.selectedSize;
+      const pendingColor = parsed.productData.selectedColor;
+      const pendingQuantity = parsed.productData.quantity || 1;
+
+      if (pendingSize) setSelectedSize(pendingSize);
+      if (pendingColor) setSelectedColor(pendingColor);
+      setQuantity(Math.max(1, pendingQuantity));
+
+      const matchedVariant = product.variants.find(
+        (v) => v.size === pendingSize && v.color === pendingColor
+      );
+
+      if (!matchedVariant || matchedVariant.stock === 0) {
+        localStorage.removeItem("postLoginRedirect");
+        setHasHandledPendingAction(true);
+        alert("Selected variant is out of stock.");
+        return;
+      }
+
+      if (parsed.action === "addToCart") {
+        addProductToCart(product, pendingSize, pendingColor, pendingQuantity);
+        alert("Product added to cart");
+      }
+
+      if (parsed.action === "buyNow") {
+        addProductToCheckout(product, pendingSize, pendingColor, pendingQuantity);
+        localStorage.removeItem("postLoginRedirect");
+        setHasHandledPendingAction(true);
+        navigate("/cart");
+        return;
+      }
+
+      localStorage.removeItem("postLoginRedirect");
+      setHasHandledPendingAction(true);
+    } catch (err) {
+      console.error("Pending action parse error:", err);
+      localStorage.removeItem("postLoginRedirect");
+      setHasHandledPendingAction(true);
+    }
+  }, [product, id, navigate, hasHandledPendingAction]);
+
+  const handleAddToCart = () => {
+    if (!product || !selectedSize || !selectedColor || stock === 0) return;
+
+    if (!isLoggedIn()) {
+      redirectToLogin("addToCart");
+      return;
+    }
+
+    addProductToCart(product, selectedSize, selectedColor, quantity);
+    alert("Product added to cart");
+  };
+
+  const handleBuyNow = () => {
+    if (!product || !selectedSize || !selectedColor || stock === 0) return;
+
+    if (!isLoggedIn()) {
+      redirectToLogin("buyNow");
+      return;
+    }
+
+    addProductToCheckout(product, selectedSize, selectedColor, quantity);
+    navigate("/cart");
+  };
 
   const handleOpenChat = () => {
     navigate("/chat");
+  };
+
+  const handleReviewSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!reviewForm.name || !reviewForm.rating || !reviewForm.comment) {
+      alert("Please fill all review fields");
+      return;
+    }
+
+    const newReview: Review = {
+      id: Date.now(),
+      name: reviewForm.name,
+      rating: reviewForm.rating,
+      comment: reviewForm.comment,
+      date: "Just now",
+    };
+
+    setReviews((prev) => [newReview, ...prev]);
+    setReviewForm({
+      name: "",
+      rating: 0,
+      comment: "",
+    });
+  };
+
+  const getColorStyle = (color: string) => {
+    const lower = color.toLowerCase().trim();
+
+    const colorMap: Record<string, string> = {
+      red: "#ef4444",
+      blue: "#3b82f6",
+      green: "#22c55e",
+      yellow: "#eab308",
+      black: "#111111",
+      white: "#ffffff",
+      gray: "#6b7280",
+      grey: "#6b7280",
+      purple: "#a855f7",
+      pink: "#ec4899",
+      orange: "#f97316",
+      brown: "#8b5e3c",
+      beige: "#d6c6a8",
+      maroon: "#7f1d1d",
+      navy: "#1e3a8a",
+      gold: "#d4af37",
+      silver: "#c0c0c0",
+      cream: "#f5f5dc",
+      olive: "#808000",
+      skyblue: "#38bdf8",
+    };
+
+    return colorMap[lower] || color;
   };
 
   if (loading) {
@@ -183,7 +413,7 @@ const handleBuyNow = () => {
   if (!product) return null;
 
   return (
-    <section className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#1a0202] text-white">
+    <section className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#050505] via-[#0d0d0d] to-[#190303] text-white">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
         * { font-family: 'Poppins', sans-serif; }
@@ -199,7 +429,7 @@ const handleBuyNow = () => {
           position: absolute;
           border-radius: 9999px;
           filter: blur(100px);
-          opacity: 0.18;
+          opacity: 0.16;
           pointer-events: none;
         }
 
@@ -212,12 +442,9 @@ const handleBuyNow = () => {
       <div className="soft-glow bottom-[-90px] right-[-70px] h-80 w-80 bg-red-500" />
 
       <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-       
-
-        <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.1fr_0.9fr]">
-          {/* Left Side */}
-          <div className="glass-panel subtle-border rounded-[34px] p-4 sm:p-5 lg:p-6">
-            <div className="grid gap-4 lg:grid-cols-[100px_1fr]">
+        <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-[0.95fr_1.05fr]">
+          <div className="glass-panel subtle-border self-start rounded-[34px] p-4 sm:p-5 lg:p-6">
+            <div className="grid items-start gap-4 lg:grid-cols-[100px_1fr]">
               <div className="order-2 flex gap-3 overflow-x-auto lg:order-1 lg:flex-col">
                 {[product.mainImage, ...product.galleryImages].map((img, idx) => (
                   <button
@@ -239,10 +466,10 @@ const handleBuyNow = () => {
                 ))}
               </div>
 
-              <div className="order-1 lg:order-2">
+              <div className="order-1 self-start lg:order-2">
                 <div
                   onClick={() => setZoomOpen(true)}
-                  className="group relative flex min-h-[430px] cursor-zoom-in items-center justify-center overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(220,38,38,0.12),rgba(255,255,255,0.02),rgba(0,0,0,0.3))] p-6"
+                  className="group relative flex w-full cursor-zoom-in items-center justify-center overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(220,38,38,0.12),rgba(255,255,255,0.02),rgba(0,0,0,0.3))] px-4 py-6"
                 >
                   {discountPercentage > 0 && (
                     <div className="absolute left-5 top-5 rounded-full border border-red-400/20 bg-red-500/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-red-300">
@@ -253,14 +480,13 @@ const handleBuyNow = () => {
                   <img
                     src={mainImage}
                     alt={product.name}
-                    className="max-h-[460px] w-full object-contain transition-transform duration-500 group-hover:scale-105"
+                    className="block max-h-[460px] w-auto max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right Side */}
           <div className="glass-panel subtle-border rounded-[34px] p-6 sm:p-8 lg:p-9">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
@@ -277,7 +503,7 @@ const handleBuyNow = () => {
                   </div>
                 )}
 
-                <h1 className="max-w-2xl text-3xl font-extrabold leading-tight text-white sm:text-2xl">
+                <h1 className="max-w-2xl text-2xl font-extrabold leading-tight text-white sm:text-3xl">
                   {product.name}
                 </h1>
               </div>
@@ -288,44 +514,59 @@ const handleBuyNow = () => {
                 {[...Array(5)].map((_, i) => (
                   <FaStar
                     key={i}
-                    className={`h-4 w-4 ${i < 4 ? "text-yellow-400" : "text-white/20"}`}
+                    className={`h-4 w-4 ${
+                      i < Math.round(Number(averageRating))
+                        ? "text-yellow-400"
+                        : "text-white/20"
+                    }`}
                   />
                 ))}
               </div>
-              <span className="text-sm text-white/50">76 Ratings</span>
+              <span className="text-sm text-white/50">{averageRating} Rating</span>
               <span className="h-1 w-1 rounded-full bg-white/25" />
-              <span className="text-sm text-white/50">50 Reviews</span>
+              <span className="text-sm text-white/50">{reviews.length} Reviews</span>
             </div>
 
-            <div className="mt-7 rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
-              <div className="flex flex-wrap items-end gap-3">
-                <h2 className="text-2xl font-bold tracking-tight text-red-400">
-                  Rs. {product.price}
-                </h2>
+            <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/40">
+                  Price
+                </p>
+                <div className="mt-3 flex flex-wrap items-end gap-3">
+                  <h2 className="text-2xl font-bold tracking-tight text-red-400">
+                    Rs. {product.price}
+                  </h2>
 
-                {product.oldPrice && (
-                  <span className="pb-1 text-lg text-white/30 line-through">
-                    Rs. {product.oldPrice}
-                  </span>
-                )}
+                  {product.oldPrice && (
+                    <span className="pb-1 text-lg text-white/30 line-through">
+                      Rs. {product.oldPrice}
+                    </span>
+                  )}
+                </div>
               </div>
 
-              <div className="mt-3 flex flex-wrap gap-3">
-                {product.netWeight && (
-                  <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-white/65">
-                    Net Weight: {product.netWeight}
-                  </span>
-                )}
+              <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/40">
+                  Availability
+                </p>
 
-                <span
-                  className={`rounded-full border px-3 py-2 text-xs font-medium ${
-                    stock === 0
-                      ? "border-red-500/20 bg-red-500/10 text-red-300"
-                      : "border-green-500/20 bg-green-500/10 text-green-300"
-                  }`}
-                >
-                  {stock === 0 ? "Out of Stock" : `${stock} item(s) available`}
-                </span>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <span
+                    className={`inline-flex rounded-full border px-3 py-2 text-xs font-medium ${
+                      stock === 0
+                        ? "border-red-500/20 bg-red-500/10 text-red-300"
+                        : "border-green-500/20 bg-green-500/10 text-green-300"
+                    }`}
+                  >
+                    {stock === 0 ? "Out of Stock" : `${stock} item(s) available`}
+                  </span>
+
+                  {product.netWeight && (
+                    <span className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-white/65">
+                      Net Weight: {product.netWeight}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -339,13 +580,14 @@ const handleBuyNow = () => {
             </div>
 
             <div className="mt-8 grid gap-6">
-              {/* Size */}
               <div>
                 <div className="mb-3 flex items-center justify-between">
                   <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-white/60">
                     Select Size
                   </h4>
-                  <span className="text-xs text-white/35">{selectedSize || "Not selected"}</span>
+                  <span className="text-xs text-white/35">
+                    {selectedSize || "Not selected"}
+                  </span>
                 </div>
 
                 <div className="flex flex-wrap gap-3">
@@ -371,38 +613,51 @@ const handleBuyNow = () => {
                 </div>
               </div>
 
-              {/* Color */}
               <div>
                 <div className="mb-3 flex items-center justify-between">
                   <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-white/60">
                     Select Color
                   </h4>
-                  <span className="text-xs text-white/35">{selectedColor || "Not selected"}</span>
+
+                  <div className="flex items-center gap-2 text-sm text-white/50">
+                    <span
+                      className="inline-block h-3.5 w-3.5 rounded-full border border-white/20"
+                      style={{ backgroundColor: getColorStyle(selectedColor || "gray") }}
+                    />
+                    <span>{selectedColor || "No color selected"}</span>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap gap-3">
                   {allColors.map((color) => {
                     const available = colorsForSize.includes(color);
+                    const isSelected = selectedColor === color;
 
                     return (
                       <button
                         key={color}
+                        type="button"
                         onClick={() => available && setSelectedColor(color)}
                         disabled={!available}
-                        className={`rounded-2xl px-5 py-3 text-sm font-semibold transition-all duration-300 ${
-                          selectedColor === color
-                            ? "bg-red-600 text-white shadow-[0_12px_24px_rgba(220,38,38,0.28)]"
-                            : "border border-white/10 bg-white/[0.04] text-white/80 hover:border-red-500/50"
-                        } ${!available ? "cursor-not-allowed opacity-35" : ""}`}
+                        className={`flex items-center gap-3 rounded-2xl border px-4 py-3 transition-all duration-300 ${
+                          isSelected
+                            ? "border-red-500 bg-red-500/10 shadow-[0_0_0_3px_rgba(239,68,68,0.12)]"
+                            : "border-white/10 bg-white/[0.03] hover:border-white/20"
+                        } ${!available ? "cursor-not-allowed opacity-40" : ""}`}
                       >
-                        {color}
+                        <span
+                          className="h-5 w-5 rounded-full border border-white/20 shadow-sm"
+                          style={{ backgroundColor: getColorStyle(color) }}
+                        />
+                        <span className="text-sm font-medium capitalize text-white/80">
+                          {color}
+                        </span>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Quantity */}
               <div className="rounded-[26px] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -444,7 +699,6 @@ const handleBuyNow = () => {
                 </div>
               </div>
 
-              {/* Buttons */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <button
                   onClick={handleBuyNow}
@@ -476,7 +730,6 @@ const handleBuyNow = () => {
           </div>
         </div>
 
-        {/* Feature Cards */}
         <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
           <div className="glass-panel subtle-border rounded-[28px] p-5">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-500/10 text-red-400">
@@ -518,9 +771,145 @@ const handleBuyNow = () => {
             </p>
           </div>
         </div>
+
+        <div className="mt-10 grid grid-cols-1 gap-8 xl:grid-cols-[1.1fr_0.9fr]">
+          <div className="glass-panel subtle-border rounded-[34px] p-6 sm:p-8">
+            <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-5">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-red-400">
+                  Customer Reviews
+                </p>
+                <h2 className="mt-2 text-2xl font-bold text-white sm:text-3xl">
+                  What customers say
+                </h2>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-right">
+                <div className="flex items-center justify-end gap-2">
+                  <span className="text-2xl font-bold text-white">{averageRating}</span>
+                  <div className="flex items-center gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <FaStar
+                        key={i}
+                        className={`h-4 w-4 ${
+                          i < Math.round(Number(averageRating))
+                            ? "text-yellow-400"
+                            : "text-white/20"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <p className="mt-1 text-sm text-white/45">
+                  Based on {reviews.length} reviews
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              {reviews.map((review) => (
+                <div
+                  key={review.id}
+                  className="rounded-[26px] border border-white/10 bg-white/[0.03] p-5 transition-all duration-300 hover:border-red-500/25"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-base font-semibold text-white">{review.name}</h3>
+                      <p className="mt-1 text-xs text-white/40">{review.date}</p>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <FaStar
+                          key={i}
+                          className={`h-4 w-4 ${
+                            i < review.rating ? "text-yellow-400" : "text-white/15"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <p className="mt-4 text-sm leading-7 text-white/60">{review.comment}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="glass-panel subtle-border rounded-[34px] p-6 sm:p-8">
+            <div className="border-b border-white/10 pb-5">
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-red-400">
+                Write a Review
+              </p>
+              <h2 className="mt-2 text-2xl font-bold text-white">Share your experience</h2>
+            </div>
+
+            <form onSubmit={handleReviewSubmit} className="mt-6 space-y-5">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-white/70">
+                  Your Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter your name"
+                  value={reviewForm.name}
+                  onChange={(e) =>
+                    setReviewForm((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none transition focus:border-red-500"
+                />
+              </div>
+
+              <div>
+                <label className="mb-3 block text-sm font-medium text-white/70">
+                  Your Rating
+                </label>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() =>
+                        setReviewForm((prev) => ({ ...prev, rating: star }))
+                      }
+                      className="transition-transform duration-200 hover:scale-110"
+                    >
+                      <FaStar
+                        className={`h-7 w-7 ${
+                          star <= reviewForm.rating ? "text-yellow-400" : "text-white/20"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-white/70">
+                  Your Review
+                </label>
+                <textarea
+                  rows={5}
+                  placeholder="Write your honest review..."
+                  value={reviewForm.comment}
+                  onChange={(e) =>
+                    setReviewForm((prev) => ({ ...prev, comment: e.target.value }))
+                  }
+                  className="w-full resize-none rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none transition focus:border-red-500"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="inline-flex w-full items-center justify-center rounded-full bg-red-600 px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(220,38,38,0.28)] transition hover:bg-red-700"
+              >
+                Submit Review
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
 
-      {/* Chat Button */}
       <button
         onClick={handleOpenChat}
         className="fixed bottom-6 right-6 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-red-600 text-white shadow-[0_18px_35px_rgba(220,38,38,0.35)] transition-transform duration-300 hover:scale-110 hover:bg-red-700"
@@ -528,7 +917,6 @@ const handleBuyNow = () => {
         <FaCommentDots className="h-6 w-6" />
       </button>
 
-      {/* Zoom Modal */}
       {zoomOpen && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-6"

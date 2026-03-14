@@ -33,6 +33,17 @@ type AuthResponse = {
   };
 };
 
+interface PendingRedirect {
+  from?: string;
+  action?: "addToCart" | "buyNow";
+  productData?: {
+    productId?: string;
+    selectedSize?: string;
+    selectedColor?: string;
+    quantity?: number;
+  };
+}
+
 const API_BASE = "http://localhost:5000/api/auth";
 
 const Login: React.FC = () => {
@@ -46,7 +57,6 @@ const Login: React.FC = () => {
 
   const isEmail = useMemo(() => /\S+@\S+\.\S+/.test(identifier), [identifier]);
 
-  // HAMESHA localStorage
   const getStorage = () => localStorage;
 
   const clearAuthStorage = () => {
@@ -102,6 +112,17 @@ const Login: React.FC = () => {
     return data as T;
   };
 
+  const getPostLoginRedirect = (): PendingRedirect | null => {
+    try {
+      const raw = localStorage.getItem("postLoginRedirect");
+      if (!raw) return null;
+      return JSON.parse(raw) as PendingRedirect;
+    } catch (error) {
+      console.error("Redirect parse error:", error);
+      return null;
+    }
+  };
+
   const handleAuthSuccess = async (
     data: AuthResponse,
     successText: string
@@ -115,7 +136,13 @@ const Login: React.FC = () => {
       "success"
     );
 
-    navigate("/");
+    const redirectData = getPostLoginRedirect();
+
+    if (redirectData?.from) {
+      navigate(redirectData.from, { replace: true });
+    } else {
+      navigate("/", { replace: true });
+    }
   };
 
   const handleGoogleBackendLogin = async (credential: string) => {
